@@ -8,6 +8,20 @@
       "when": 1757336088954,
       "tag": "0000_normal_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1757386000573,
+      "tag": "0001_vengeful_blur",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1757389177676,
+      "tag": "0002_busy_outlaw_kid",
+      "breakpoints": true
     }
   ]
 }

@@ -31,4 +31,27 @@ export const api = {
     });
     return response.json();
   },
+
+  // Onboarding endpoints
+  // Complete business onboarding (single endpoint)
+  completeBusinessOnboarding: async (token, data) => {
+    const response = await fetch(`${API_BASE_URL}/onboarding/business/complete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  getBusinessProfile: async (token) => {
+    const response = await fetch(`${API_BASE_URL}/onboarding/business/profile`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return response.json();
+  },
 };

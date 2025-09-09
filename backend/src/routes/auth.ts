@@ -62,6 +62,7 @@ auth.post("/register", async (c) => {
         email: newUser[0].email,
         fullName: newUser[0].fullName,
         userType: newUser[0].userType,
+        isOnboardingCompleted: newUser[0].isOnboardingCompleted,
       },
     });
   } catch (error) {
@@ -101,6 +102,7 @@ auth.post("/login", async (c) => {
         email: user[0].email,
         fullName: user[0].fullName,
         userType: user[0].userType,
+        isOnboardingCompleted: user[0].isOnboardingCompleted,
       },
     });
   } catch (error) {
@@ -131,6 +133,7 @@ auth.get("/me", async (c) => {
         email: user[0].email,
         fullName: user[0].fullName,
         userType: user[0].userType,
+        isOnboardingCompleted: user[0].isOnboardingCompleted,
       },
     });
   } catch (error) {

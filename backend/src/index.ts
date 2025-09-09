@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import auth from "./routes/auth.js";
+import onboarding from "./routes/onboarding.js";
 
 const app = new Hono();
 
@@ -16,6 +17,7 @@ app.use(
 
 // Routes
 app.route("/api/auth", auth);
+app.route("/api/onboarding", onboarding);
 
 app.get("/", (c) => {
   return c.text("Hello Hono!");

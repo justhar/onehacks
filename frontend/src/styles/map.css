@@ -1,0 +1,8 @@
+/* Leaflet CSS - Import this in your component */
+@import 'leaflet/dist/leaflet.css';
+
+.leaflet-container {
+  height: 300px;
+  width: 100%;
+  border-radius: 8px;
+}
