@@ -3,8 +3,6 @@ import {
   serial,
   varchar,
   text,
-  integer,
-  numeric,
   timestamp,
   pgEnum,
   json,
@@ -12,26 +10,6 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const userTypeEnum = pgEnum("user_type", ["business", "pembeli"]);
-export const orderStatusEnum = pgEnum("order_status", [
-  "pending",
-  "paid",
-  "delivered",
-  "ready",
-  "completed",
-  "cancelled",
-  ]);
-
-  export const paymentStatusEnum = pgEnum("payment_status",[
-    "pending",
-    "success",
-    "failed",
-  ]);
-
-  export const paymentMethodEnum = pgEnum("payment_method", [
-    "gopay",
-    "ovo",
-    "transfer",
-  ]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -40,17 +18,13 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   userType: userTypeEnum("user_type").notNull(),
   isOnboardingCompleted: boolean("is_onboarding_completed").default(false),
-  address: text("address").notNull(),
-  mapNotes: text("map_notes"),
-  latitude: varchar("latitude", { length: 50 }),
-  longitude: varchar("longitude", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const businessProfiles = pgTable("business_profiles", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id")
+  userId: serial("user_id")
     .references(() => users.id)
     .notNull(),
   businessName: varchar("business_name", { length: 255 }).notNull(),
@@ -64,57 +38,4 @@ export const businessProfiles = pgTable("business_profiles", {
   paymentInfo: json("payment_info"), // Store payment details as JSON
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const products = pgTable("products", {
-  id: serial("id").primaryKey(),
-  sellerId: integer("seller_id")
-  .references(() => users.id)
-  .notNull(),
-  title: varchar("title", {length: 255}).notNull(),
-  imageUrl: text("image_url"),
-  price: numeric("price", {precision: 10, scale: 2}).notNull(),
-  discount: numeric("discount", {precision: 5, scale: 2}).default("0"),
-  finalPrice: numeric("final_price", {precision: 10, scale: 2}),
-  expiryDate: timestamp("expiry_date"),
-  quantity: integer("quantity").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  buyerId: integer("buyer_id")
-  .references(()=> users.id)
-  .notNull(),
-  sellerId: integer("seller_id")
-  .references(()=>users.id)
-  .notNull(),
-  totalAmount: numeric("total_amount", {precision: 10, scale: 2}).notNull(),
-  status: orderStatusEnum("status").default("pending"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const orderItems =  pgTable("order_items", {
-  id: serial("id").primaryKery(),
-  orderId: integer("order_id")
-  .references(()=>orders.id)
-  .notNull(),
-  productId: integer("product_id")
-  .references(()=>products.id)
-  .notNull(),
-  quantity: integer("quanitity").notNull(),
-  price: numeric("price", {precision: 10, scale: 2}).notNull(),
-});
-
-export const payments = pgTable("payments", {
-  id: serial("id").primaryKery(),
-  orderId: integer("order_id")
-  .references(()=> orders.id)
-  .notNull(),
-  status: paymentStatusEnum("status").default("pending"),
-  paymentMethod: paymentMethodEnum("payment_method"),
-  transactionId: varchar("transaction_id", {length: 255}),
-  createdAt: timestamp("created_at").defaultNow(),
 });
