@@ -17,7 +17,7 @@ auth.post("/register", async (c) => {
     const { email, fullName, password, userType } = await c.req.json();
 
     // Validate required fields
-    if (!email || !fullName || !password || !userType) {
+    if (!email || !fullName || !password || !userType ) {
       return c.json({ error: "All fields are required" }, 400);
     }
 
