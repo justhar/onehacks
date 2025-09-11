@@ -3,6 +3,8 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import auth from "./routes/auth.js";
 import onboarding from "./routes/onboarding.js";
+import productRoute from "./routes/productRoute.js";
+import orderRoute from "./routes/orderRoute.js";
 
 const app = new Hono();
 
@@ -18,9 +20,11 @@ app.use(
 // Routes
 app.route("/api/auth", auth);
 app.route("/api/onboarding", onboarding);
+app.route("/api/productRoute", productRoute);
+app.route("/api/orderRoute", orderRoute)
 
 app.get("/", (c) => {
-  return c.text("Hello Hono!");
+  return c.text("Muahahaha dor!");
 });
 
 serve(

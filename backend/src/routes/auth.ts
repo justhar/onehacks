@@ -14,10 +14,10 @@ const auth = new Hono();
 // Register endpoint
 auth.post("/register", async (c) => {
   try {
-    const { email, fullName, password, userType, address, latitude, longitude, mapNotes } = await c.req.json();
+    const { email, fullName, password, userType } = await c.req.json();
 
     // Validate required fields
-    if (!email || !fullName || !password || !userType || !address) {
+    if (!email || !fullName || !password || !userType ) {
       return c.json({ error: "All fields are required" }, 400);
     }
 
@@ -62,9 +62,6 @@ auth.post("/register", async (c) => {
         email: newUser[0].email,
         fullName: newUser[0].fullName,
         userType: newUser[0].userType,
-        address: newUser[0].address,
-        latitude: newUser[0].latitude,
-        longitude: newUser[0].longitude,
         isOnboardingCompleted: newUser[0].isOnboardingCompleted,
       },
     });

@@ -33,6 +33,9 @@ export const orderStatusEnum = pgEnum("order_status", [
     "transfer",
   ]);
 
+  export const deliveryMethodEnum = pgEnum("delivery_method", ["delivery", "pickup"]);
+
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),
@@ -40,10 +43,6 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   userType: userTypeEnum("user_type").notNull(),
   isOnboardingCompleted: boolean("is_onboarding_completed").default(false),
-  address: text("address").notNull(),
-  mapNotes: text("map_notes"),
-  latitude: varchar("latitude", { length: 50 }),
-  longitude: varchar("longitude", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -92,24 +91,26 @@ export const orders = pgTable("orders", {
   .notNull(),
   totalAmount: numeric("total_amount", {precision: 10, scale: 2}).notNull(),
   status: orderStatusEnum("status").default("pending"),
+  deliveryMethod: deliveryMethodEnum("delivery_method").notNull(),
+  deliveryAddress: text("delivery_address"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const orderItems =  pgTable("order_items", {
-  id: serial("id").primaryKery(),
+  id: serial("id").primaryKey(),
   orderId: integer("order_id")
   .references(()=>orders.id)
   .notNull(),
   productId: integer("product_id")
   .references(()=>products.id)
   .notNull(),
-  quantity: integer("quanitity").notNull(),
+  quantity: integer("quantity").notNull(),
   price: numeric("price", {precision: 10, scale: 2}).notNull(),
 });
 
 export const payments = pgTable("payments", {
-  id: serial("id").primaryKery(),
+  id: serial("id").primaryKey(),
   orderId: integer("order_id")
   .references(()=> orders.id)
   .notNull(),
