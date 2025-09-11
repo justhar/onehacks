@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { NavLink, Link } from "react-router";
+import { NavLink, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -12,16 +12,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Menu, Leaf, ShoppingCart, Heart, User, LogOut, Settings } from "lucide-react"
 
-export default function Navigation() {
+   export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
 
   // Mock authentication state - in real app this would come from auth context
   const [user, setUser] = useState(null)
 
   const navItems = [
-    { href: "/marketplace", label: "Marketplace", icon: ShoppingCart },
-    { href: "/donate", label: "Donate Food", icon: Heart },
-    { href: "/restaurant", label: "For Restaurants", icon: User },
+    { link: "/marketplace", label: "Marketplace", icon: ShoppingCart },
+    { link: "/donate", label: "Donate Food", icon: Heart },
+    { link: "/restaurant", label: "For Restaurants", icon: User },
   ]
 
   const handleSignOut = () => {
@@ -44,8 +44,8 @@ export default function Navigation() {
         <nav className="hidden md:flex items-center space-x-6">
           {navItems.map((item) => (
             <Link
-              key={item.href}
-              to={item.href}
+              key={item.link}
+              to={item.link}
               className="flex items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               <item.icon className="h-4 w-4" />
@@ -96,10 +96,10 @@ export default function Navigation() {
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/auth">Sign In</Link>
+                <Link to="/Home">Sign In</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link to="/auth">Get Started</Link>
+                <Link to="/Home">Get Started</Link>
               </Button>
             </>
           )}
@@ -143,10 +143,10 @@ export default function Navigation() {
                 ) : (
                   <>
                     <Button variant="ghost" className="justify-start" asChild>
-                      <Link href="/auth">Sign In</Link>
+                      <Link href="/Home">Sign In</Link>
                     </Button>
                     <Button className="justify-start" asChild>
-                      <Link href="/auth">Get Started</Link>
+                      <Link href="/Home">Get Started</Link>
                     </Button>
                   </>
                 )}
@@ -157,4 +157,4 @@ export default function Navigation() {
       </div>
     </header>
   )
-}
+} 
