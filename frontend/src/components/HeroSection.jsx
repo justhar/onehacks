@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button"
-import { ArrowRight, Users, Utensils, Heart } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Users, Utensils, Heart } from "lucide-react";
+import { Link } from "react-router";
 
 export default function HeroSection() {
   return (
@@ -10,23 +10,30 @@ export default function HeroSection() {
           {/* Hero Content */}
           <div className="mb-8">
             <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 text-balance">
-              Reduce Food Waste, <span className="text-primary">Feed Communities</span>
+              Reduce Food Waste,{" "}
+              <span className="text-primary">Feed Communities</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8 text-pretty max-w-2xl mx-auto">
-              Connect restaurants with customers and charities to rescue surplus food. Save money, help the environment,
-              and make a difference in your community.
+              Connect restaurants with customers and charities to rescue surplus
+              food. Save money, help the environment, and make a difference in
+              your community.
             </p>
           </div>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <Button size="lg" className="text-lg px-8" asChild>
-              <Link to="/Marketplace"> 
+              <Link to="/marketplace">
                 Browse Marketplace
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 bg-transparent" asChild>
+            <Button
+              size="lg"
+              variant="outline"
+              className="text-lg px-8 bg-transparent"
+              asChild
+            >
               <Link href="/donate">
                 Donate Food
                 <Heart className="ml-2 h-5 w-5" />
@@ -41,7 +48,9 @@ export default function HeroSection() {
                 <Utensils className="h-8 w-8 text-primary" />
               </div>
               <div className="text-3xl font-bold text-foreground">500+</div>
-              <div className="text-sm text-muted-foreground">Partner Restaurants</div>
+              <div className="text-sm text-muted-foreground">
+                Partner Restaurants
+              </div>
             </div>
             <div className="text-center">
               <div className="flex justify-center mb-2">
@@ -55,11 +64,13 @@ export default function HeroSection() {
                 <Heart className="h-8 w-8 text-primary" />
               </div>
               <div className="text-3xl font-bold text-foreground">50+</div>
-              <div className="text-sm text-muted-foreground">Charities Helped</div>
+              <div className="text-sm text-muted-foreground">
+                Charities Helped
+              </div>
             </div>
           </div>
         </div>
       </div>
     </section>
-  )
+  );
 }

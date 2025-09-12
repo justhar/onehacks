@@ -54,8 +54,8 @@ export default function Navigation() {
         <nav className="hidden md:flex items-center space-x-6">
           {navItems.map((item) => (
             <Link
-              key={item.link}
-              to={item.link}
+              key={item.href}
+              to={item.href}
               className="flex items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               <item.icon className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Navigate } from "react-router";
 
@@ -16,14 +16,9 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      return <Navigate to="/login" replace />;
-    }
-  }, [isAuthenticated]);
-  // if (!isAuthenticated) {
-  //   return <Navigate to="/login" replace />;
-  // }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   return children;
 };

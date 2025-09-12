@@ -6,11 +6,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
 import BusinessOnboarding from "./pages/BusinessOnboarding";
 import "./App.css";
 import Marketplace from "./pages/Marketplace";
 import Landing from "./pages/Landing";
+import RestaurantDashboard from "./pages/RestaurantDashboard";
+import Orders from "./pages/Orders";
 
 function App() {
   return (
@@ -19,15 +20,16 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Landing />} />
-            <Route path="/Home" element={<Home />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/orders" element={<Orders />} />
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <RestaurantDashboard />
                 </ProtectedRoute>
               }
             />
