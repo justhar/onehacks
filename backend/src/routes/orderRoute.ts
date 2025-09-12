@@ -1,6 +1,7 @@
 //order mau apa aja: buat order -> cek apakah cukup ->kalau gacukup ga valid, hitung harga, simpan order, simpan order items, update order
 import { Hono } from "hono";
 import db from "../lib/db.js";
+import { snap } from "../lib/midtrans.js";
 import { orders, orderItems, products, payments } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 
@@ -72,7 +73,20 @@ orderRoute.post("/", async(c) => {
             })
             .returning();
 
-            return {order: newOrder, payment: newPayment}; 
+            const transaction = await snap.createTransaction({
+                transaction_details: {
+                    order_id:`order-${newOrder.id}`,
+                    gross_amount: totalAmount,
+                },
+                enabled_payments: ["gopay", "shopeepay", "bank_transfer"],
+            });
+
+            return {
+                order: newOrder, 
+                payment: newPayment,
+                snapToken: transaction.token,
+                snapRedirectUrl: transaction.redirect_url
+            }; 
         });
         
         return c.json(result);
