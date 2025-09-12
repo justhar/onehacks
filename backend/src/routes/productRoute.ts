@@ -21,6 +21,7 @@ productRoute.post("/", async (c) => {
     return c.json(newProduct);
 });
 
+
 productRoute.get("/", async (c) => {
     const result = await db.select().from(products);
     return c.json(result);
@@ -42,6 +43,44 @@ productRoute.get("/:id", async (c) => {
 
     return c.json(product[0]);
 });
+
+productRoute.get("/product-nearby", async (c) => {
+    const userLat = Number(c.req.query("lat"));
+    const userLng = Number (c.req.query("lng"));
+
+    if (isNaN(userLat)|| isNaN(userLng)) {
+        return c.json({error: "Latitude and Longitude are required"}, 400);
+    }
+
+    const allProducts = await db.select().from(products);
+
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const R = 6371; //radius bumi
+
+    const withDistance = allProducts.map((p)=> {
+        if (!p.latitude || !p.longitude) return {...p, distance: null};
+
+        const prodLat = Number(p.latitude);
+        const prodLng = Number(p.longitude);
+        const dLat = toRad(prodLat - userLat);
+        const dLng = toRad(prodLng - userLng);
+
+        const a = Math.sin(dLat/2)**2 +
+                  Math.cos(toRad(userLat)) * Math.cos(toRad(p.latitude)) *
+                  Math.sin(dLng/2)**2;
+
+        const cAngle = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * cAngle;
+
+        return {...p, distance};
+});
+
+    withDistance.sort((a,b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+    const radius = Number(c.req.query("radius") || 1);
+    const nearbyProducts = withDistance.filter( p => p.distance !== null && p.distance <= radius);
+    return c.json(nearbyProducts)
+});
+
 
 productRoute.put("/:id", async(c) => {
     const { id } = c.req.param();
