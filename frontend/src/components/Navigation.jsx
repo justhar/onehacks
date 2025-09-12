@@ -1,37 +1,47 @@
-import { useState } from "react"
+import { useState } from "react";
 import { NavLink, Link } from "react-router";
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Menu, Leaf, ShoppingCart, Heart, User, LogOut, Settings } from "lucide-react"
+} from "@/components/ui/dropdown-menu";
+import {
+  Menu,
+  Leaf,
+  ShoppingCart,
+  Heart,
+  User,
+  LogOut,
+  Settings,
+  Package,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Navigation() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
 
   // Mock authentication state - in real app this would come from auth context
-  const [user, setUser] = useState(null)
+  const { user, logout } = useAuth();
 
   const navItems = [
     { href: "/marketplace", label: "Marketplace", icon: ShoppingCart },
     { href: "/donate", label: "Donate Food", icon: Heart },
-    { href: "/restaurant", label: "For Restaurants", icon: User },
-  ]
+    { href: "/dashboard", label: "For Restaurants", icon: User },
+    { href: "/orders", label: "My Orders", icon: Package },
+  ];
 
   const handleSignOut = () => {
-    setUser(null)
-    // TODO: Clear authentication state
-  }
+    logout();
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-around px-4">
+      <div className="flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
@@ -55,22 +65,30 @@ export default function Navigation() {
         </nav>
 
         {/* Desktop Actions */}
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center space-x-4 ml-20">
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
+                >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-                    <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
+                    <AvatarImage
+                      src={user.avatar || "/placeholder.svg"}
+                      alt={user.fullName}
+                    />
+                    <AvatarFallback>{user.fullName?.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">{user.name}</p>
-                    <p className="w-[200px] truncate text-sm text-muted-foreground">{user.email}</p>
+                    <p className="font-medium">{user.fullName}</p>
+                    <p className="w-[200px] truncate text-sm text-muted-foreground">
+                      {user.email}
+                    </p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
@@ -135,7 +153,11 @@ export default function Navigation() {
                         Profile
                       </Link>
                     </Button>
-                    <Button variant="ghost" className="justify-start" onClick={handleSignOut}>
+                    <Button
+                      variant="ghost"
+                      className="justify-start"
+                      onClick={handleSignOut}
+                    >
                       <LogOut className="mr-2 h-4 w-4" />
                       Sign Out
                     </Button>
@@ -156,5 +178,5 @@ export default function Navigation() {
         </Sheet>
       </div>
     </header>
-  )
+  );
 }

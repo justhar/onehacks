@@ -192,21 +192,9 @@ export function MarketplaceHeader({ onSearch, onSort, onToggleFilters }) {
                     for an address above
                   </p>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="mapNotes">Location Notes (Optional)</Label>
-                  <Textarea
-                    id="mapNotes"
-                    name="mapNotes"
-                    value={formData.mapNotes}
-                    onChange={handleChange}
-                    placeholder="Add any notes about your location (e.g., specific building, floor, landmarks)"
-                    className=" "
-                  />
-                </div>
               </div>
-              <DialogFooter>
-                <Button>Submit</Button>
+              <DialogFooter className="mt-4">
+                <Button>Set Location</Button>
                 <DialogClose asChild>
                   <Button variant="outline">Cancel</Button>
                 </DialogClose>
