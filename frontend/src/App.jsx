@@ -8,12 +8,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import BusinessOnboarding from "./pages/BusinessOnboarding";
-import Order from "./pages/Order";
-import Checkout from "./pages/Checkout";
-import Orders from "./pages/Orders";
 import "./App.css";
 import Marketplace from "./pages/Marketplace";
-import RestaurantDashboard from "./pages/RestaurantDashboard";
+import Landing from "./pages/Landing";
 
 function App() {
   return (
@@ -21,18 +18,16 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/Home" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/marketplace" element={<Marketplace />} />
-            <Route path="/order/:id" element={<Order />} />
-            <Route path="/checkout/:id" element={<Checkout />} />
-            <Route path="/orders" element={<Orders />} />
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <RestaurantDashboard />
+                  <Dashboard />
                 </ProtectedRoute>
               }
             />

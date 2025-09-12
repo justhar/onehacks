@@ -72,6 +72,8 @@ export const products = pgTable("products", {
   .notNull(),
   title: varchar("title", {length: 255}).notNull(),
   imageUrl: text("image_url"),
+  latitude: varchar("latitude", { length: 50 }),
+  longitude: varchar("longitude", { length: 50 }),
   price: numeric("price", {precision: 10, scale: 2}).notNull(),
   discount: numeric("discount", {precision: 5, scale: 2}).default("0"),
   finalPrice: numeric("final_price", {precision: 10, scale: 2}),

@@ -54,8 +54,8 @@ export default function Navigation() {
         <nav className="hidden md:flex items-center space-x-6">
           {navItems.map((item) => (
             <Link
-              key={item.href}
-              to={item.href}
+              key={item.link}
+              to={item.link}
               className="flex items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               <item.icon className="h-4 w-4" />
@@ -114,10 +114,10 @@ export default function Navigation() {
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/auth">Sign In</Link>
+                <Link to="/Home">Sign In</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link to="/auth">Get Started</Link>
+                <Link to="/Home">Get Started</Link>
               </Button>
             </>
           )}
@@ -165,10 +165,10 @@ export default function Navigation() {
                 ) : (
                   <>
                     <Button variant="ghost" className="justify-start" asChild>
-                      <Link href="/auth">Sign In</Link>
+                      <Link href="/Home">Sign In</Link>
                     </Button>
                     <Button className="justify-start" asChild>
-                      <Link href="/auth">Get Started</Link>
+                      <Link href="/Home">Get Started</Link>
                     </Button>
                   </>
                 )}
