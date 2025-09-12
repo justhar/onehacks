@@ -11,9 +11,11 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 
-export const userTypeEnum = pgEnum("user_type", ["business", "pembeli"]);
+export const userTypeEnum = pgEnum("user_type", ["business", "pembeli", "charity"]);
+export const productTypeEnum = pgEnum("product_type", ["sell", "donation"]);
 export const orderStatusEnum = pgEnum("order_status", [
   "pending",
+  "requested",
   "paid",
   "delivered",
   "ready",
@@ -65,11 +67,28 @@ export const businessProfiles = pgTable("business_profiles", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const charityProfiles = pgTable("charity_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .references(() => users.id)
+    .notNull(),
+  charityName: varchar("business_name", { length: 255 }).notNull(),
+  contactName: varchar("contact_name", { length: 255 }).notNull(),
+  contactPhone: varchar("contact_phone", { length: 20 }).notNull(),
+  charityEmail: varchar("business_email", { length: 255 }).notNull(),
+  address: text("address").notNull(),
+  latitude: varchar("latitude", { length: 50 }),
+  longitude: varchar("longitude", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   sellerId: integer("seller_id")
   .references(() => users.id)
   .notNull(),
+  type: productTypeEnum("product_type").notNull(),
   title: varchar("title", {length: 255}).notNull(),
   imageUrl: text("image_url"),
   latitude: varchar("latitude", { length: 50 }),

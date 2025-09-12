@@ -8,11 +8,13 @@ const productRoute = new Hono ();
 productRoute.post("/", async (c) => {
     const body = await c.req.json();
     const discount = body.discount || 0;
-    const finalPrice = body.price - (body.price*discount) / 100;
+    const type = body.type || "sell";
+    const basePrice = type === "donation" ? 0 : body.prices;
+    const finalPrice = type === "donation"? 0: basePrice - (basePrice*discount) / 100;
 
     const [newProduct] = await db.insert(products).values({
         ...body,
-        discount,
+        discount: type === "donation" ? null : discount,
         finalPrice,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -66,7 +68,7 @@ productRoute.get("/product-nearby", async (c) => {
         const dLng = toRad(prodLng - userLng);
 
         const a = Math.sin(dLat/2)**2 +
-                  Math.cos(toRad(userLat)) * Math.cos(toRad(p.latitude)) *
+                  Math.cos(toRad(userLat)) * Math.cos(toRad(prodLat)) *
                   Math.sin(dLng/2)**2;
 
         const cAngle = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));

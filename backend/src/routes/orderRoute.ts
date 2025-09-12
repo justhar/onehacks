@@ -20,6 +20,7 @@ orderRoute.post("/", async(c) => {
     try {
         const result = await db.transaction(async (tx) => {
             let totalAmount =  0;
+            let productType: string | null = null;
 
             for (const item of items) {
                 const [product] = await tx
@@ -27,7 +28,11 @@ orderRoute.post("/", async(c) => {
                 .from(products)
                 .where(eq(products.id, item.productId));
 
+                if (productType && productType !== product.type) {
+                throw new Error("Order cannot mix different product types");
+                }
                 if (!product) throw new Error(`Product ${item.productId} not found!`);
+                productType = product.type;
                 if (Number(product.quantity) < item.quantity) {
                     throw new Error(`Insufficient stock for product ${product.title}`);
                 }
@@ -40,6 +45,7 @@ orderRoute.post("/", async(c) => {
             totalAmount += Number(item.price)*item.quantity;
             }
 
+            if (productType === "sell") {
             const [newOrder] = await tx
             .insert(orders)
             .values({
@@ -85,8 +91,36 @@ orderRoute.post("/", async(c) => {
                 order: newOrder, 
                 payment: newPayment,
                 snapToken: transaction.token,
-                snapRedirectUrl: transaction.redirect_url
-            }; 
+                snapRedirectUrl: transaction.redirect_url}; 
+            } 
+             
+            else if (productType === "donation"){
+                const [newOrder] = await tx
+                .insert(orders)
+                .values({
+                buyerId,
+                sellerId,
+                totalAmount: String(totalAmount),
+                status:"requested",
+                deliveryMethod,
+                deliveryAddress: deliveryMethod === "delivery" ? JSON.stringify(deliveryAddress) : null as string | null,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            })
+            .returning();
+
+            for (const item of items) {
+                await tx.insert(orderItems).values({
+                orderId: newOrder.id,
+                productId: item.productId,
+                quantity: item.quantity,
+                price: "0",
+                })
+            };
+
+            return { order: newOrder };
+            };
+
         });
         
         return c.json(result);
