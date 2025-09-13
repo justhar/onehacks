@@ -35,6 +35,17 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "success",
   "failed",
 ]);
+  export const paymentStatusEnum = pgEnum("payment_status",[
+    "pending",
+    "success",
+    "failed",
+  ]);
+
+  export const withDrawStatusEnum = pgEnum("withdraw_status",[
+    "pending",
+    "success",
+    "failed",
+  ]);
 
 export const paymentMethodEnum = pgEnum("payment_method", [
   "gopay",
@@ -72,6 +83,7 @@ export const businessProfiles = pgTable("business_profiles", {
   longitude: varchar("longitude", { length: 50 }),
   mapNotes: text("map_notes"),
   paymentInfo: json("payment_info"), // Store payment details as JSON
+  balance: numeric("balance", {precision: 10, scale: 2}).default("0"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -152,3 +164,18 @@ export const payments = pgTable("payments", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export const withdraw = pgTable("withdraws", {
+  id: serial("id").primaryKey(),
+  businessId: integer("business_id")
+    .references(() => businessProfiles.id)
+    .notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(), // jumlah bayar
+  destination: varchar("destination", {length: 255}).notNull(),
+  status: withDrawStatusEnum("status").default("pending"),
+  paymentMethod: paymentMethodEnum("payment_method").notNull(),
+  transactionId: varchar("transaction_id", { length: 255 }).unique(), // unik biar ga double
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
