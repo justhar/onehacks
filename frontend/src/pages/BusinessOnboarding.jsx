@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Badge } from "../components/ui/badge";
 import { api } from "../lib/api";
 import "leaflet/dist/leaflet.css";
 
@@ -91,8 +90,12 @@ const BusinessOnboarding = () => {
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const searchTimeout = useRef(null);
+
+  if (user.isOnboardingCompleted) {
+    navigate("/dashboard");
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;

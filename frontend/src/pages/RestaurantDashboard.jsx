@@ -24,7 +24,19 @@ export default function RestaurantDashboard() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      // Check if user is a business and has completed onboarding
+
       if (!user || !token) return;
+
+      if (!user.userType || user.userType !== "business") {
+        navigate("/");
+        return;
+      }
+
+      if (!user.isOnboardingCompleted) {
+        navigate("/onboarding/business");
+        return;
+      }
 
       try {
         setIsLoading(true);
