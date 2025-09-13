@@ -17,6 +17,7 @@ export default function RestaurantDashboard() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [donations, setDonations] = useState([]);
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,10 +43,15 @@ export default function RestaurantDashboard() {
         setIsLoading(true);
         setError(null);
 
-        // Fetch products for this seller
-        const productsResponse = await api.getProductsBySeller(user.id);
+        // Fetch products for this seller (sell type only)
+        const productsResponse = await api.getProductsByBusiness(user.id);
         const transformedProducts = transformProductsData(productsResponse);
         setProducts(transformedProducts);
+
+        // Fetch donations for this seller (donation type only)
+        const donationsResponse = await api.getDonationsByBusiness(user.id);
+        const transformedDonations = transformProductsData(donationsResponse);
+        setDonations(transformedDonations);
 
         // Fetch orders for this seller
         const ordersResponse = await api.getSellerOrders(token);
@@ -216,6 +222,38 @@ export default function RestaurantDashboard() {
             </div>
           </div>
 
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold text-foreground">
+                Your Donation Items
+              </h2>
+              <Button onClick={() => navigate("/donation/add")}>
+                Add New Donation
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {donations.length === 0 ? (
+                <div className="col-span-full text-center py-8">
+                  <p className="text-muted-foreground">No donation items added yet</p>
+                  <Button className="mt-4" onClick={() => navigate("/donation/add")}>
+                    Add Your First Donation
+                  </Button>
+                </div>
+              ) : (
+                donations.map((item) => (
+                  <DashboardFoodItemCard
+                    key={item.id}
+                    item={item}
+                    onEdit={handleEditProduct}
+                    onDelete={handleDeleteProduct}
+                    isDonation={true}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+
           {/* Consumer Orders Section */}
           <div>
             <h2 className="text-2xl font-semibold text-foreground mb-6">
@@ -293,17 +331,18 @@ export default function RestaurantDashboard() {
                       </div>
 
                       <div className="mt-4 flex space-x-2">
-                        {order.status === "paid" && (
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() =>
-                              handleUpdateOrderStatus(order.id, "ready")
-                            }
-                          >
-                            Mark as Ready
-                          </Button>
-                        )}
+                        {order.paymentStatus === "success" &&
+                          order.status === "pending" && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() =>
+                                handleUpdateOrderStatus(order.id, "ready")
+                              }
+                            >
+                              Mark as Ready
+                            </Button>
+                          )}
                         {order.status === "ready" && (
                           <Button
                             size="sm"

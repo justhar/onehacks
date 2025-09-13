@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import db from "../lib/db.js";
 import { products, businessProfiles } from "../db/schema.js";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { getAuthUser } from "../lib/auth.js";
 
 const productRoute = new Hono();
@@ -15,7 +15,6 @@ productRoute.post("/", async (c) => {
 
     const body = await c.req.json();
 
-    // Get business profile to use its location
     const businessProfile = await db
       .select()
       .from(businessProfiles)
@@ -28,25 +27,28 @@ productRoute.post("/", async (c) => {
     const discount = body.discount || 0;
     const finalPrice = body.price - (body.price * discount) / 100;
     const productValues = {
-  businessId: Number(authUser.userId),
-  title: body.title,
-  description: body.description,
-  category: body.category,
-  imageUrl: body.imageUrl,
-  latitude: businessProfile[0].latitude,
-  longitude: businessProfile[0].longitude,
-  price: Number(body.price),
-  discount,
-  finalPrice,
-  quantity: Number(body.quantity),
-  type: body.type,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
+      businessId: Number(authUser.userId),
+      title: body.title,
+      description: body.description,
+      category: body.category,
+      imageUrl: body.imageUrl,
+      latitude: businessProfile[0].latitude,
+      longitude: businessProfile[0].longitude,
+      price: Number(body.price),
+      discount,
+      finalPrice,
+      quantity: Number(body.quantity),
+      type: body.type,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-const [newProduct] = await db.insert(products).values(productValues as any);
+    const newProduct = await db
+      .insert(products)
+      .values(productValues as any)
+      .returning();
 
-    return c.json(newProduct); // ✅ ini yang kamu lupa
+    return c.json(newProduct[0]); // Return the first inserted product
   } catch (error) {
     console.error("Product creation error:", error);
     return c.json({ error: "Internal server error" }, 500);
@@ -54,13 +56,16 @@ const [newProduct] = await db.insert(products).values(productValues as any);
 });
 
 productRoute.get("/", async (c) => {
-  const result = await db
+  const type = c.req.query("type"); // Get type query parameter
+  
+  const baseQuery = db
     .select({
       id: products.id,
       businessId: products.businessId,
       title: products.title,
       description: products.description,
       category: products.category,
+      type: products.type,
       imageUrl: products.imageUrl,
       latitude: products.latitude,
       longitude: products.longitude,
@@ -75,37 +80,68 @@ productRoute.get("/", async (c) => {
       businessName: businessProfiles.businessName,
     })
     .from(products)
-    .leftJoin(businessProfiles, eq(products.businessId, businessProfiles.userId));
+    .leftJoin(
+      businessProfiles,
+      eq(products.businessId, businessProfiles.userId)
+    );
+
+  // Filter by type if provided
+  let result;
+  if (type && (type === "sell" || type === "donation")) {
+    result = await baseQuery.where(eq(products.type, type));
+  } else {
+    result = await baseQuery;
+  }
 
   return c.json(result);
-});
+});productRoute.get("/business/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const type = c.req.query("type"); // Get type query parameter
 
-productRoute.get("/business/:id", async (c) => {
-  const id = c.req.param("id");
-  const result = await db
-    .select({
-      id: products.id,
-      businessId: products.businessId,
-      title: products.title,
-      description: products.description,
-      category: products.category,
-      imageUrl: products.imageUrl,
-      latitude: products.latitude,
-      longitude: products.longitude,
-      price: products.price,
-      discount: products.discount,
-      finalPrice: products.finalPrice,
-      expiryDate: products.expiryDate,
-      quantity: products.quantity,
-      rating: products.rating,
-      createdAt: products.createdAt,
-      updatedAt: products.updatedAt,
-      businessName: businessProfiles.businessName,
-    })
-    .from(products)
-    .leftJoin(businessProfiles, eq(products.businessId, businessProfiles.userId))
-    .where(eq(products.businessId, Number(id)));
-  return c.json(result);
+    // Build the base query
+    const baseQuery = db
+      .select({
+        id: products.id,
+        businessId: products.businessId,
+        title: products.title,
+        description: products.description,
+        category: products.category,
+        type: products.type,
+        imageUrl: products.imageUrl,
+        latitude: products.latitude,
+        longitude: products.longitude,
+        price: products.price,
+        discount: products.discount,
+        finalPrice: products.finalPrice,
+        expiryDate: products.expiryDate,
+        quantity: products.quantity,
+        rating: products.rating,
+        createdAt: products.createdAt,
+        updatedAt: products.updatedAt,
+        businessName: businessProfiles.businessName,
+      })
+      .from(products)
+      .leftJoin(
+        businessProfiles,
+        eq(products.businessId, businessProfiles.userId)
+      );
+
+    // Apply where conditions based on type filter
+    let result;
+    if (type && (type === "sell" || type === "donation")) {
+      result = await baseQuery.where(
+        and(eq(products.businessId, Number(id)), eq(products.type, type))
+      );
+    } else {
+      result = await baseQuery.where(eq(products.businessId, Number(id)));
+    }
+
+    return c.json(result);
+  } catch (error) {
+    console.error("Get products by business error:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
 });
 
 productRoute.get("/product-nearby", async (c) => {
@@ -137,7 +173,10 @@ productRoute.get("/product-nearby", async (c) => {
       businessName: businessProfiles.businessName,
     })
     .from(products)
-    .leftJoin(businessProfiles, eq(products.businessId, businessProfiles.userId));
+    .leftJoin(
+      businessProfiles,
+      eq(products.businessId, businessProfiles.userId)
+    );
 
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const R = 6371; //radius bumi
@@ -201,7 +240,10 @@ productRoute.get("/:id", async (c) => {
       businessName: businessProfiles.businessName,
     })
     .from(products)
-    .leftJoin(businessProfiles, eq(products.businessId, businessProfiles.userId))
+    .leftJoin(
+      businessProfiles,
+      eq(products.businessId, businessProfiles.userId)
+    )
     .where(eq(products.id, Number(id)));
 
   if (product.length === 0) {

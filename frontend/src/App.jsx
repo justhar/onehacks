@@ -3,11 +3,14 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import { AuthProvider } from "./contexts/AuthContext";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import CharityProtectedRoute from "./components/CharityProtectedRoute";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import BusinessOnboarding from "./pages/BusinessOnboarding";
+import CharityOnboarding from "./pages/CharityOnboarding";
 import AddProduct from "./pages/AddProduct";
+import AddDonation from "./pages/AddDonation";
 import EditProduct from "./pages/EditProduct";
 import Checkout from "./pages/Checkout";
 import Order from "./pages/Order";
@@ -29,7 +32,14 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/donate" element={<Donate />} /> 
+            <Route 
+              path="/donate" 
+              element={
+                <CharityProtectedRoute>
+                  <Donate />
+                </CharityProtectedRoute>
+              } 
+            /> 
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/orders" element={<Orders />} />
             <Route
@@ -65,6 +75,14 @@ function App() {
               }
             />
             <Route
+              path="/donation/add"
+              element={
+                <ProtectedRoute>
+                  <AddDonation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/edit/:id"
               element={
                 <ProtectedRoute>
@@ -77,6 +95,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <BusinessOnboarding />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/onboarding/charity"
+              element={
+                <ProtectedRoute>
+                  <CharityOnboarding />
                 </ProtectedRoute>
               }
             />

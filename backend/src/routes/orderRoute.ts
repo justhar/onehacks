@@ -114,6 +114,7 @@ orderRoute.post("/", async (c) => {
     const result = await db.transaction(async (tx) => {
       let totalAmount = 0;
       let productType: string | null = null;
+      let orderBusinessId: number | null = null;
 
       for (const item of items) {
         const [product] = await tx
@@ -122,6 +123,15 @@ orderRoute.post("/", async (c) => {
           .where(eq(products.id, item.productId));
 
         if (!product) throw new Error(`Product ${item.productId} not found!`);
+
+        // Set businessId from the first product
+        if (orderBusinessId === null) {
+          orderBusinessId = product.businessId;
+        } else if (orderBusinessId !== product.businessId) {
+          throw new Error(
+            "Order cannot mix products from different businesses"
+          );
+        }
 
         if (productType && productType !== product.type) {
           throw new Error("Order cannot mix different product types");
@@ -143,7 +153,7 @@ orderRoute.post("/", async (c) => {
 
       const orderValues: typeof orders.$inferInsert = {
         buyerId: authUser.userId,
-        businessId: businessId ?? null,
+        businessId: orderBusinessId!, // Use the businessId from products
         totalAmount: String(totalAmount),
         type: (productType as "sell" | "donation") ?? "sell",
         status: productType === "donation" ? "requested" : "pending",
@@ -176,7 +186,6 @@ orderRoute.post("/", async (c) => {
 
       const paymentValues: typeof payments.$inferInsert = {
         orderId: newOrder.id,
-        amount: String(totalAmount),
         status: "pending",
         paymentMethod: paymentMethod ?? null,
         createdAt: new Date(),
@@ -399,6 +408,90 @@ orderRoute.post("/webhook", async (c) => {
   }
 });
 
+// Create payment for existing order
+orderRoute.post("/:orderId/payment", async (c) => {
+  try {
+    const authUser = await getAuthUser(c);
+    if (!authUser) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const orderId = c.req.param("orderId");
+
+    // Get the order to verify ownership and get details
+    const [order] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, Number(orderId)));
+
+    if (!order) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+
+    if (order.buyerId !== authUser.userId) {
+      return c.json({ error: "Unauthorized access to order" }, 403);
+    }
+
+    // Check if payment already exists
+    const existingPayment = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.orderId, Number(orderId)));
+
+    if (existingPayment.length > 0) {
+      // If payment exists but is pending, return existing token
+      const payment = existingPayment[0];
+      if (payment.transactionId) {
+        return c.json({
+          success: true,
+          snapToken: payment.transactionId,
+          payment: payment,
+        });
+      }
+    }
+
+    // Create new payment record
+    const paymentValues: typeof payments.$inferInsert = {
+      orderId: Number(orderId),
+      status: "pending",
+      paymentMethod: null,
+      createdAt: new Date(),
+    };
+
+    const [newPayment] = await db
+      .insert(payments)
+      .values(paymentValues)
+      .returning();
+
+    // Create Midtrans transaction
+    const transaction = await snap.createTransaction({
+      transaction_details: {
+        order_id: `order-${orderId}-${Date.now()}`, // Make it unique
+        gross_amount: Number(order.totalAmount),
+      },
+      enabled_payments: ["gopay", "shopeepay", "bank_transfer"],
+      callbacks: {
+        finish: "https://www.webtoons.com/id/",
+      },
+    });
+
+    // Update payment with transaction ID
+    await db
+      .update(payments)
+      .set({ transactionId: transaction.token })
+      .where(eq(payments.id, newPayment.id));
+
+    return c.json({
+      success: true,
+      snapToken: transaction.token,
+      payment: newPayment,
+    });
+  } catch (error) {
+    console.error("Payment creation error:", error);
+    return c.json({ error: "Failed to create payment" }, 500);
+  }
+});
+
 // Manually update payment status (called from frontend after payment success)
 orderRoute.patch("/:orderId/payment-success", async (c) => {
   try {
@@ -435,6 +528,13 @@ orderRoute.patch("/:orderId/payment-success", async (c) => {
       .where(eq(payments.orderId, parseInt(orderId)));
 
     // Update order status to paid
+    await db
+      .update(orders)
+      .set({
+        status: "paid",
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, parseInt(orderId)));
 
     console.log(`Payment manually updated for order ${orderId}: success`);
 
@@ -450,53 +550,55 @@ orderRoute.patch("/:orderId/payment-success", async (c) => {
 orderRoute.patch("/:orderId/status", async (c) => {
   try {
     const authUser = await getAuthUser(c);
-    if (!authUser) return c.json({ error: "Unauthorized" }, 401);
-
-    const orderId = Number(c.req.param("orderId"));
-    const { status } = await c.req.json<{ status: OrderStatus }>();
-
-    const [order] = await db
-      .select()
-      .from(orders)
-      .where(eq(orders.id, orderId));
-    if (!order) return c.json({ error: "Order not found" }, 404);
-    if (order.businessId !== authUser.userId)
-      return c.json({ error: "Forbidden" }, 403);
-
-    type OrderType = "sell" | "donation";
-    type OrderStatus =
-      | "pending"
-      | "requested"
-      | "paid"
-      | "ready"
-      | "delivered"
-      | "completed"
-      | "cancelled"
-      | "expired"
-      | "denied";
-
-    const allowedStatusesMap: Record<OrderType, OrderStatus[]> = {
-      sell: ["ready", "delivered", "completed", "cancelled"],
-      donation: ["requested", "pending", "completed", "cancelled"],
-    };
-
-    const orderType = order.type as OrderType;
-    const allowedStatuses = allowedStatusesMap[orderType] ?? [];
-
-    if (!allowedStatuses.includes(status)) {
-      return c.json(
-        { error: `Invalid status update for mode ${orderType}` },
-        400
-      );
+    if (!authUser) {
+      return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const [updatedOrder] = await db
-      .update(orders)
-      .set({ status, updatedAt: new Date() })
-      .where(eq(orders.id, orderId))
-      .returning();
+    const { orderId } = c.req.param();
+    const { status } = await c.req.json();
 
-    return c.json({ success: true, order: updatedOrder });
+    // Validate status
+    const validStatuses = [
+      "pending",
+      "paid",
+      "ready",
+      "completed",
+      "cancelled",
+      "delivered",
+    ];
+    if (!validStatuses.includes(status)) {
+      return c.json({ error: "Invalid status" }, 400);
+    }
+
+    // Check if the order belongs to the authenticated seller
+    const order = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, parseInt(orderId)));
+
+    if (order.length === 0) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+
+    if (order[0].businessId !== authUser.userId) {
+      return c.json({ error: "Unauthorized - Not your order" }, 403);
+    }
+
+    // Update order status
+    await db
+      .update(orders)
+      .set({
+        status: status,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, parseInt(orderId)));
+
+    console.log(`Order ${orderId} status updated to: ${status}`);
+
+    return c.json({
+      success: true,
+      message: "Order status updated successfully",
+    });
   } catch (error) {
     console.error("Order status update error:", error);
     return c.json({ error: "Internal server error" }, 500);

@@ -55,9 +55,35 @@ export const api = {
     return response.json();
   },
 
+  completeCharityOnboarding: async (token, data) => {
+    const response = await fetch(`${API_BASE_URL}/onboardingcharity/charity/complete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  getCharityProfile: async (token) => {
+    const response = await fetch(`${API_BASE_URL}/onboardingcharity/charity/profile`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return response.json();
+  },
+
   // Product endpoints
   getProducts: async () => {
     const response = await fetch(`${API_BASE_URL}/productRoute`);
+    return response.json();
+  },
+
+  getDonations: async () => {
+    const response = await fetch(`${API_BASE_URL}/productRoute?type=donation`);
     return response.json();
   },
 
@@ -71,8 +97,13 @@ export const api = {
     return response.json();
   },
 
-  getProductsBySeller: async (sellerId) => {
-    const response = await fetch(`${API_BASE_URL}/productRoute/seller/${sellerId}`);
+  getProductsByBusiness: async (businessId) => {
+    const response = await fetch(`${API_BASE_URL}/productRoute/business/${businessId}?type=sell`);
+    return response.json();
+  },
+
+  getDonationsByBusiness: async (businessId) => {
+    const response = await fetch(`${API_BASE_URL}/productRoute/business/${businessId}?type=donation`);
     return response.json();
   },
 
@@ -133,7 +164,7 @@ export const api = {
   },
 
   getSellerOrders: async (token) => {
-    const response = await fetch(`${API_BASE_URL}/orderRoute/seller`, {
+    const response = await fetch(`${API_BASE_URL}/orderRoute/business`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },

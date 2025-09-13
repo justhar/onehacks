@@ -36,11 +36,11 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "failed",
 ]);
 
-  export const withDrawStatusEnum = pgEnum("withdraw_status",[
-    "pending",
-    "success",
-    "failed",
-  ]);
+export const withDrawStatusEnum = pgEnum("withdraw_status", [
+  "pending",
+  "success",
+  "failed",
+]);
 
 export const paymentMethodEnum = pgEnum("payment_method", [
   "gopay",
@@ -78,7 +78,7 @@ export const businessProfiles = pgTable("business_profiles", {
   longitude: varchar("longitude", { length: 50 }),
   mapNotes: text("map_notes"),
   paymentInfo: json("payment_info"), // Store payment details as JSON
-  balance: numeric("balance", {precision: 10, scale: 2}).default("0"),
+  balance: numeric("balance", { precision: 10, scale: 2 }).default("0"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -88,10 +88,10 @@ export const charityProfiles = pgTable("charity_profiles", {
   userId: integer("user_id")
     .references(() => users.id)
     .notNull(),
-  charityName: varchar("business_name", { length: 255 }).notNull(),
+  charityName: varchar("charity_name", { length: 255 }).notNull(),
   contactName: varchar("contact_name", { length: 255 }).notNull(),
   contactPhone: varchar("contact_phone", { length: 20 }).notNull(),
-  charityEmail: varchar("business_email", { length: 255 }).notNull(),
+  charityEmail: varchar("charity_email", { length: 255 }).notNull(),
   address: text("address").notNull(),
   latitude: varchar("latitude", { length: 50 }),
   longitude: varchar("longitude", { length: 50 }),
@@ -107,6 +107,7 @@ export const products = pgTable("products", {
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   category: varchar("category", { length: 100 }),
+  type: varchar("type", { length: 50 }).default("sell"), // Default to 'sell' for existing records
   imageUrl: text("image_url"),
   latitude: varchar("latitude", { length: 50 }),
   longitude: varchar("longitude", { length: 50 }),
@@ -116,7 +117,6 @@ export const products = pgTable("products", {
   expiryDate: timestamp("expiry_date"),
   quantity: integer("quantity").default(0),
   rating: numeric("rating", { precision: 3, scale: 2 }).default("0"),
-  type: productTypeEnum("product_type").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -156,7 +156,6 @@ export const payments = pgTable("payments", {
     .references(() => orders.id)
     .notNull(),
   status: paymentStatusEnum("status").default("pending"),
-  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   paymentMethod: paymentMethodEnum("payment_method"),
   transactionId: varchar("transaction_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
@@ -169,11 +168,10 @@ export const withdraw = pgTable("withdraws", {
     .references(() => businessProfiles.id)
     .notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(), // jumlah bayar
-  destination: varchar("destination", {length: 255}).notNull(),
+  destination: varchar("destination", { length: 255 }).notNull(),
   status: withDrawStatusEnum("status").default("pending"),
   paymentMethod: paymentMethodEnum("payment_method").notNull(),
   transactionId: varchar("transaction_id", { length: 255 }).unique(), // unik biar ga double
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
-

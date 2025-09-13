@@ -104,7 +104,7 @@ export default function Checkout() {
       setError("");
 
       const orderData = {
-        sellerId: product.sellerId,
+        businessId: product.businessId, // Changed from sellerId to businessId
         totalAmount: total.toFixed(2),
         deliveryMethod: deliveryOption,
         deliveryAddress: deliveryOption === "delivery" ? address : null,

@@ -64,6 +64,8 @@ const Register = () => {
       // Redirect based on user type and onboarding status
       if (formData.userType === 'business') {
         navigate('/onboarding/business/basic');
+      } else if (formData.userType === 'charity') {
+        navigate('/onboarding/charity');
       } else {
         navigate('/dashboard');
       }
@@ -145,6 +147,7 @@ const Register = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="business">Business</SelectItem>
+                    <SelectItem value="charity">Charity</SelectItem>
                     <SelectItem value="pembeli">Pembeli (Buyer)</SelectItem>
                   </SelectContent>
                 </Select>

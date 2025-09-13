@@ -3,9 +3,9 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, MapPin, Star, Edit, Trash2 } from "lucide-react";
+import { Clock, MapPin, Star, Edit, Trash2, Heart } from "lucide-react";
 
-export function DashboardFoodItemCard({ item, onEdit, onDelete }) {
+export function DashboardFoodItemCard({ item, onEdit, onDelete, isDonation = false }) {
   const discountPercentage = item.discount ? Math.round(item.discount) : 0;
 
   console.log(item);
@@ -18,9 +18,15 @@ export function DashboardFoodItemCard({ item, onEdit, onDelete }) {
           alt={item.name}
           className="w-full h-48 object-cover"
         />
-        {discountPercentage > 0 && (
+        {discountPercentage > 0 && !isDonation && (
           <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground">
             {discountPercentage}% OFF
+          </Badge>
+        )}
+        {isDonation && (
+          <Badge className="absolute top-2 right-2 bg-red-500 text-white">
+            <Heart className="h-3 w-3 mr-1" />
+            DONATION
           </Badge>
         )}
         <Badge variant="secondary" className="absolute top-2 left-2">
@@ -46,7 +52,12 @@ export function DashboardFoodItemCard({ item, onEdit, onDelete }) {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              {discountPercentage > 0 ? (
+              {isDonation ? (
+                <div className="flex items-center space-x-1">
+                  <Heart className="h-4 w-4 text-red-500" />
+                  <span className="text-lg font-bold text-red-500">FREE</span>
+                </div>
+              ) : discountPercentage > 0 ? (
                 <>
                   <span className="text-lg font-bold text-primary">
                     Rp {item.discountedPrice}

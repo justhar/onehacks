@@ -46,7 +46,7 @@ export const transformProductData = (backendProduct) => {
     rating: parseFloat(backendProduct.rating) || 0,
     image: backendProduct.imageUrl || "/placeholder.svg",
     quantity: backendProduct.quantity || 0,
-    sellerId: backendProduct.sellerId,
+    businessId: backendProduct.businessId,
     latitude: backendProduct.latitude,
     longitude: backendProduct.longitude,
     createdAt: backendProduct.createdAt,
@@ -74,7 +74,7 @@ export const transformOrderData = (backendOrder) => {
     createdAt: backendOrder.createdAt,
     updatedAt: backendOrder.updatedAt,
     buyerId: backendOrder.buyerId,
-    sellerId: backendOrder.sellerId
+    businessId: backendOrder.businessId
   };
 };
 
