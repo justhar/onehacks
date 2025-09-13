@@ -11,14 +11,23 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 
-export const userTypeEnum = pgEnum("user_type", ["business", "pembeli"]);
+export const userTypeEnum = pgEnum("user_type", [
+  "business",
+  "pembeli",
+  "charity",
+]);
+export const productTypeEnum = pgEnum("product_type", ["sell", "donation"]);
+export const orderTypeEnum = pgEnum("order_type", ["sell", "donation"]);
 export const orderStatusEnum = pgEnum("order_status", [
   "pending",
+  "requested",
   "paid",
   "delivered",
   "ready",
   "completed",
   "cancelled",
+  "expired",
+  "denied",
 ]);
 
 export const paymentStatusEnum = pgEnum("payment_status", [
@@ -63,6 +72,22 @@ export const businessProfiles = pgTable("business_profiles", {
   longitude: varchar("longitude", { length: 50 }),
   mapNotes: text("map_notes"),
   paymentInfo: json("payment_info"), // Store payment details as JSON
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const charityProfiles = pgTable("charity_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .references(() => users.id)
+    .notNull(),
+  charityName: varchar("business_name", { length: 255 }).notNull(),
+  contactName: varchar("contact_name", { length: 255 }).notNull(),
+  contactPhone: varchar("contact_phone", { length: 20 }).notNull(),
+  charityEmail: varchar("business_email", { length: 255 }).notNull(),
+  address: text("address").notNull(),
+  latitude: varchar("latitude", { length: 50 }),
+  longitude: varchar("longitude", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -125,4 +150,5 @@ export const payments = pgTable("payments", {
   paymentMethod: paymentMethodEnum("payment_method"),
   transactionId: varchar("transaction_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });

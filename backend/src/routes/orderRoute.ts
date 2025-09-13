@@ -315,7 +315,14 @@ orderRoute.patch("/:orderId/status", async (c) => {
     const { status } = await c.req.json();
 
     // Validate status
-    const validStatuses = ["pending", "paid", "ready", "completed", "cancelled", "delivered"];
+    const validStatuses = [
+      "pending",
+      "paid",
+      "ready",
+      "completed",
+      "cancelled",
+      "delivered",
+    ];
     if (!validStatuses.includes(status)) {
       return c.json({ error: "Invalid status" }, 400);
     }
