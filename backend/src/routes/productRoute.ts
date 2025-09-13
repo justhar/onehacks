@@ -3,7 +3,6 @@ import db from "../lib/db.js";
 import { products, businessProfiles } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 import { getAuthUser } from "../lib/auth.js";
-import { Insertable } from "drizzle-orm";
 
 const productRoute = new Hono();
 
@@ -28,24 +27,25 @@ productRoute.post("/", async (c) => {
 
     const discount = body.discount || 0;
     const finalPrice = body.price - (body.price * discount) / 100;
-const productValues: Insertable<typeof products> = {
-      businessId: Number(authUser.userId),
-      title: body.title,
-      description: body.description,
-      category: body.category,
-      imageUrl: body.imageUrl,
-      latitude: businessProfile[0].latitude,
-      longitude: businessProfile[0].longitude,
-      price: Number(body.price),
-      discount: Number(discount),
-      finalPrice: Number(finalPrice),
-      quantity: Number(body.quantity),
-      type: body.type,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    const productValues = {
+  businessId: Number(authUser.userId),
+  title: body.title,
+  description: body.description,
+  category: body.category,
+  imageUrl: body.imageUrl,
+  latitude: businessProfile[0].latitude,
+  longitude: businessProfile[0].longitude,
+  price: Number(body.price),
+  discount,
+  finalPrice,
+  quantity: Number(body.quantity),
+  type: body.type,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
 
-    const [newProduct] = await db.insert(products).values(productValues).returning();
+const [newProduct] = await db.insert(products).values(productValues as any);
+
     return c.json(newProduct); // ✅ ini yang kamu lupa
   } catch (error) {
     console.error("Product creation error:", error);

@@ -20,6 +20,52 @@ export function CharityFilters ({ onFiltersChange }) {
 
   const dietaryOptions = ["Vegetarian", "Vegan", "Gluten-Free", "Dairy-Free", "Nut-Free", "Halal", "Kosher"]
 
+  const hasActiveFilters =
+  selectedCategories.length > 0 ||
+  selectedDietary.length > 0 ||
+  deliveryOnly; 
+
+  const clearFilters = () => {
+  setSelectedCategories([]);
+  setSelectedDietary([]);
+  setDeliveryOnly(false);
+  onFiltersChange?.({ categories: [], dietary: [], deliveryOnly: false });
+};
+
+// Category filter handler
+const handleCategoryChange = (category, checked) => {
+  setSelectedCategories(prev =>
+    checked ? [...prev, category] : prev.filter(c => c !== category)
+  );
+  onFiltersChange?.({
+    categories: checked ? [...selectedCategories, category] : selectedCategories.filter(c => c !== category),
+    dietary: selectedDietary,
+    deliveryOnly
+  });
+};
+
+// Dietary filter handler
+const handleDietaryChange = (dietary, checked) => {
+  setSelectedDietary(prev =>
+    checked ? [...prev, dietary] : prev.filter(d => d !== dietary)
+  );
+  onFiltersChange?.({
+    categories: selectedCategories,
+    dietary: checked ? [...selectedDietary, dietary] : selectedDietary.filter(d => d !== dietary),
+    deliveryOnly
+  });
+};
+
+// Delivery filter handler
+const handleDeliveryChange = (checked) => {
+  setDeliveryOnly(!!checked);
+  onFiltersChange?.({
+    categories: selectedCategories,
+    dietary: selectedDietary,
+    deliveryOnly: !!checked
+  });
+};
+
   return (
     <Card className="sticky top-4">
       <CardHeader>

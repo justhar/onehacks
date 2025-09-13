@@ -6,14 +6,13 @@ import {
   orders,
   orderItems,
   products,
-  payments, 
-  businessProfiles, 
+  payments,
+  businessProfiles,
   withdraw,
   users,
 } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 import { getAuthUser } from "../lib/auth.js";
-import { Insertable } from "drizzle-orm";
 
 const orderRoute = new Hono();
 
@@ -40,7 +39,10 @@ orderRoute.get("/", async (c) => {
         paymentStatus: payments.status,
       })
       .from(orders)
-      .leftJoin(businessProfiles, eq(orders.businessId, businessProfiles.userId))
+      .leftJoin(
+        businessProfiles,
+        eq(orders.businessId, businessProfiles.userId)
+      )
       .leftJoin(payments, eq(orders.id, payments.orderId))
       .where(eq(orders.buyerId, authUser.userId));
 
@@ -139,11 +141,11 @@ orderRoute.post("/", async (c) => {
         totalAmount += Number(item.price) * item.quantity;
       }
 
-      const orderValues: Insertable<typeof orders> = {
+      const orderValues: typeof orders.$inferInsert = {
         buyerId: authUser.userId,
         businessId: businessId ?? null,
-        totalAmount: totalAmount,
-        type: productType,
+        totalAmount: String(totalAmount),
+        type: (productType as "sell" | "donation") ?? "sell",
         status: productType === "donation" ? "requested" : "pending",
         deliveryMethod,
         deliveryAddress:
@@ -154,7 +156,10 @@ orderRoute.post("/", async (c) => {
         updatedAt: new Date(),
       };
 
-      const [newOrder] = await tx.insert(orders).values(orderValues).returning();
+      const [newOrder] = await tx
+        .insert(orders)
+        .values(orderValues)
+        .returning();
 
       for (const item of items) {
         await tx.insert(orderItems).values({
@@ -169,16 +174,16 @@ orderRoute.post("/", async (c) => {
         return { order: newOrder };
       }
 
-      const paymentValues: Insertable<typeof payments> = {
+      const paymentValues: typeof payments.$inferInsert = {
         orderId: newOrder.id,
-        amount: totalAmount,
+        amount: String(totalAmount),
         status: "pending",
         paymentMethod: paymentMethod ?? null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        };
+      };
 
-        const [newPayment] = await tx
+      const [newPayment] = await tx
         .insert(payments)
         .values(paymentValues)
         .returning();
@@ -208,61 +213,61 @@ orderRoute.post("/", async (c) => {
   }
 });
 
-
-
 orderRoute.post("/withdraw", async (c) => {
-    const {businessId, amount, status, destination, paymentMethod} = await c.req.json();
-    if ( amount<= 0) {
-        return c.json({error:"Amount must be greater than 0"}, 400);
-    }
-    if (!destination || destination=== "null") {
-        return c.json({error: "Required destination to transfer the money"}, 400);
-    }
-    if (!paymentMethod) {
-        return c.json({error: "there is no option"})
-    }
+  const { businessId, amount, status, destination, paymentMethod } =
+    await c.req.json();
+  if (amount <= 0) {
+    return c.json({ error: "Amount must be greater than 0" }, 400);
+  }
+  if (!destination || destination === "null") {
+    return c.json({ error: "Required destination to transfer the money" }, 400);
+  }
+  if (!paymentMethod) {
+    return c.json({ error: "there is no option" });
+  }
 
-    const [business] = await db
+  const [business] = await db
     .select()
     .from(businessProfiles)
     .where(eq(businessProfiles.id, businessId));
 
-    if(!business) {
-        return c.json({ error: "Business not found"}, 404);
-    }   
+  if (!business) {
+    return c.json({ error: "Business not found" }, 404);
+  }
 
-    if (Number(business.balance) < amount) {
-        return c.json({ error: "Insufficient balance"}, 400);
-    }
+  if (Number(business.balance) < amount) {
+    return c.json({ error: "Insufficient balance" }, 400);
+  }
 
-    const newWithdraw = await db.transaction(async (tx) => { 
+  const newWithdraw = await db.transaction(async (tx) => {
     const [withDrawRecord] = await tx
-    .insert(withdraw)
-    .values({
-            businessId: businessId,
-            amount,
-            status: "pending" as withdrawStatus,
-            destination,
-            paymentMethod: paymentMethod ?? null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        })
-        .returning();
+      .insert(withdraw)
+      .values({
+        businessId: businessId,
+        amount,
+        status: "pending" as withdrawStatus,
+        destination,
+        paymentMethod: paymentMethod ?? null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
 
-        await tx
-        .update(businessProfiles)
-        .set({
-            balance: sql`${businessProfiles.balance} - ${amount}`,
-            updatedAt: new Date(), 
-        })
-        .where(eq(businessProfiles.id, businessId));
-        return withDrawRecord;});
+    await tx
+      .update(businessProfiles)
+      .set({
+        balance: sql`${businessProfiles.balance} - ${amount}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(businessProfiles.id, businessId));
+    return withDrawRecord;
+  });
 
-        return c.json({ 
-            success: true, 
-            withdraw: newWithdraw,
-            message: "Withdraw request created successfully",
-        });
+  return c.json({
+    success: true,
+    withdraw: newWithdraw,
+    message: "Withdraw request created successfully",
+  });
 });
 
 // Midtrans Notification (Webhook)
@@ -277,15 +282,9 @@ type OrderStatus =
   | "expired"
   | "denied";
 
-  type PaymentStatus =
-  | "pending"
-  | "success"
-  | "failed";
+type PaymentStatus = "pending" | "success" | "failed";
 
-    type withdrawStatus =
-  | "pending"
-  | "success"
-  | "failed";
+type withdrawStatus = "pending" | "success" | "failed";
 
 orderRoute.post("/initiate", async (c) => {
   try {
@@ -300,7 +299,8 @@ orderRoute.post("/initiate", async (c) => {
       .where(eq(orders.id, Number(orderId)));
 
     if (!order) return c.json({ error: "Order not found" }, 404);
-    if (order.buyerId !== authUser.userId) return c.json({ error: "Forbidden" }, 403);
+    if (order.buyerId !== authUser.userId)
+      return c.json({ error: "Forbidden" }, 403);
 
     const uniqueOrderId = `order-${orderId}-${Date.now()}`;
 
@@ -455,21 +455,25 @@ orderRoute.patch("/:orderId/status", async (c) => {
     const orderId = Number(c.req.param("orderId"));
     const { status } = await c.req.json<{ status: OrderStatus }>();
 
-    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    const [order] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, orderId));
     if (!order) return c.json({ error: "Order not found" }, 404);
-    if (order.businessId !== authUser.userId) return c.json({ error: "Forbidden" }, 403);
+    if (order.businessId !== authUser.userId)
+      return c.json({ error: "Forbidden" }, 403);
 
     type OrderType = "sell" | "donation";
     type OrderStatus =
-    | "pending"
-    | "requested"
-    | "paid"
-    | "ready"
-    | "delivered"
-    | "completed"
-    | "cancelled"
-    | "expired"
-    | "denied";
+      | "pending"
+      | "requested"
+      | "paid"
+      | "ready"
+      | "delivered"
+      | "completed"
+      | "cancelled"
+      | "expired"
+      | "denied";
 
     const allowedStatusesMap: Record<OrderType, OrderStatus[]> = {
       sell: ["ready", "delivered", "completed", "cancelled"],
@@ -480,7 +484,10 @@ orderRoute.patch("/:orderId/status", async (c) => {
     const allowedStatuses = allowedStatusesMap[orderType] ?? [];
 
     if (!allowedStatuses.includes(status)) {
-      return c.json({ error: `Invalid status update for mode ${orderType}` }, 400);
+      return c.json(
+        { error: `Invalid status update for mode ${orderType}` },
+        400
+      );
     }
 
     const [updatedOrder] = await db
