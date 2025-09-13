@@ -5,6 +5,7 @@ import auth from "./routes/auth.js";
 import onboarding from "./routes/onboarding.js";
 import productRoute from "./routes/productRoute.js";
 import orderRoute from "./routes/orderRoute.js";
+import onboardingCharity from "./routes/onboardingCharity.js";
 
 const app = new Hono();
 
@@ -19,6 +20,7 @@ app.use(
 
 // Routes
 app.route("/api/auth", auth);
+app.route("/api/onboardingcharity", onboardingCharity)
 app.route("/api/onboarding", onboarding);
 app.route("/api/productRoute", productRoute);
 app.route("/api/orderRoute", orderRoute)

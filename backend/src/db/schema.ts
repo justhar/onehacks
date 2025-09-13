@@ -85,7 +85,7 @@ export const charityProfiles = pgTable("charity_profiles", {
 
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
-  sellerId: integer("seller_id")
+  businessId: integer("business_id")
   .references(() => users.id)
   .notNull(),
   type: productTypeEnum("product_type").notNull(),
@@ -107,7 +107,7 @@ export const orders = pgTable("orders", {
   buyerId: integer("buyer_id")
   .references(()=> users.id)
   .notNull(),
-  sellerId: integer("seller_id")
+  businessId: integer("business_id")
   .references(()=>users.id)
   .notNull(),
   totalAmount: numeric("total_amount", {precision: 10, scale: 2}).notNull(),

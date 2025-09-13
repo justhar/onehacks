@@ -29,9 +29,9 @@ productRoute.get("/", async (c) => {
     return c.json(result);
 });
 
-productRoute.get("/seller/:id", async (c) => {
+productRoute.get("/business/:id", async (c) => {
   const id  = c.req.param("id");
-  const result = await db.select().from(products).where(eq(products.sellerId, Number(id)));
+  const result = await db.select().from(products).where(eq(products.businessId, Number(id)));
   return c.json(result);
 });
 
