@@ -3,6 +3,7 @@ import db from "../lib/db.js";
 import { products, businessProfiles } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 import { getAuthUser } from "../lib/auth.js";
+import { Insertable } from "drizzle-orm";
 
 const productRoute = new Hono();
 
@@ -27,26 +28,25 @@ productRoute.post("/", async (c) => {
 
     const discount = body.discount || 0;
     const finalPrice = body.price - (body.price * discount) / 100;
+const productValues: Insertable<typeof products> = {
+      businessId: Number(authUser.userId),
+      title: body.title,
+      description: body.description,
+      category: body.category,
+      imageUrl: body.imageUrl,
+      latitude: businessProfile[0].latitude,
+      longitude: businessProfile[0].longitude,
+      price: Number(body.price),
+      discount: Number(discount),
+      finalPrice: Number(finalPrice),
+      quantity: Number(body.quantity),
+      type: body.type,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-    const [newProduct] = await db
-      .insert(products)
-      .values({
-        sellerId: authUser.userId,
-        title: body.title,
-        description: body.description,
-        category: body.category,
-        imageUrl: body.imageUrl,
-        latitude: businessProfile[0].latitude,
-        longitude: businessProfile[0].longitude,
-        price: body.price.toString(),
-        discount: discount.toString(),
-        finalPrice: finalPrice.toString(),
-        quantity: body.quantity,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
-    return c.json(newProduct);
+    const [newProduct] = await db.insert(products).values(productValues).returning();
+    return c.json(newProduct); // ✅ ini yang kamu lupa
   } catch (error) {
     console.error("Product creation error:", error);
     return c.json({ error: "Internal server error" }, 500);
@@ -57,7 +57,7 @@ productRoute.get("/", async (c) => {
   const result = await db
     .select({
       id: products.id,
-      sellerId: products.sellerId,
+      businessId: products.businessId,
       title: products.title,
       description: products.description,
       category: products.category,
@@ -75,17 +75,17 @@ productRoute.get("/", async (c) => {
       businessName: businessProfiles.businessName,
     })
     .from(products)
-    .leftJoin(businessProfiles, eq(products.sellerId, businessProfiles.userId));
+    .leftJoin(businessProfiles, eq(products.businessId, businessProfiles.userId));
 
   return c.json(result);
 });
 
-productRoute.get("/seller/:id", async (c) => {
+productRoute.get("/business/:id", async (c) => {
   const id = c.req.param("id");
   const result = await db
     .select({
       id: products.id,
-      sellerId: products.sellerId,
+      businessId: products.businessId,
       title: products.title,
       description: products.description,
       category: products.category,
@@ -103,8 +103,8 @@ productRoute.get("/seller/:id", async (c) => {
       businessName: businessProfiles.businessName,
     })
     .from(products)
-    .leftJoin(businessProfiles, eq(products.sellerId, businessProfiles.userId))
-    .where(eq(products.sellerId, Number(id)));
+    .leftJoin(businessProfiles, eq(products.businessId, businessProfiles.userId))
+    .where(eq(products.businessId, Number(id)));
   return c.json(result);
 });
 
@@ -119,7 +119,7 @@ productRoute.get("/product-nearby", async (c) => {
   const allProducts = await db
     .select({
       id: products.id,
-      sellerId: products.sellerId,
+      businessId: products.businessId,
       title: products.title,
       description: products.description,
       category: products.category,
@@ -137,7 +137,7 @@ productRoute.get("/product-nearby", async (c) => {
       businessName: businessProfiles.businessName,
     })
     .from(products)
-    .leftJoin(businessProfiles, eq(products.sellerId, businessProfiles.userId));
+    .leftJoin(businessProfiles, eq(products.businessId, businessProfiles.userId));
 
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const R = 6371; //radius bumi
@@ -183,7 +183,7 @@ productRoute.get("/:id", async (c) => {
   const product = await db
     .select({
       id: products.id,
-      sellerId: products.sellerId,
+      businessId: products.businessId,
       title: products.title,
       description: products.description,
       category: products.category,
@@ -201,7 +201,7 @@ productRoute.get("/:id", async (c) => {
       businessName: businessProfiles.businessName,
     })
     .from(products)
-    .leftJoin(businessProfiles, eq(products.sellerId, businessProfiles.userId))
+    .leftJoin(businessProfiles, eq(products.businessId, businessProfiles.userId))
     .where(eq(products.id, Number(id)));
 
   if (product.length === 0) {

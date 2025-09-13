@@ -6,16 +6,18 @@ import {
   orders,
   orderItems,
   products,
-  payments,
+  payments, 
+  businessProfiles, 
+  withdraw,
   users,
-  businessProfiles,
 } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 import { getAuthUser } from "../lib/auth.js";
+import { Insertable } from "drizzle-orm";
 
 const orderRoute = new Hono();
 
-// Get orders for a user (buyer or seller)
+// Get orders for a user (buyer or business)
 orderRoute.get("/", async (c) => {
   try {
     const authUser = await getAuthUser(c);
@@ -27,18 +29,18 @@ orderRoute.get("/", async (c) => {
       .select({
         id: orders.id,
         buyerId: orders.buyerId,
-        sellerId: orders.sellerId,
+        businessId: orders.businessId,
         totalAmount: orders.totalAmount,
         status: orders.status,
         deliveryMethod: orders.deliveryMethod,
         deliveryAddress: orders.deliveryAddress,
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
-        sellerName: businessProfiles.businessName,
+        businessName: businessProfiles.businessName,
         paymentStatus: payments.status,
       })
       .from(orders)
-      .leftJoin(businessProfiles, eq(orders.sellerId, businessProfiles.userId))
+      .leftJoin(businessProfiles, eq(orders.businessId, businessProfiles.userId))
       .leftJoin(payments, eq(orders.id, payments.orderId))
       .where(eq(orders.buyerId, authUser.userId));
 
@@ -49,19 +51,19 @@ orderRoute.get("/", async (c) => {
   }
 });
 
-// Get orders for seller (restaurant dashboard)
-orderRoute.get("/seller", async (c) => {
+// Get orders for business (restaurant dashboard)
+orderRoute.get("/business", async (c) => {
   try {
     const authUser = await getAuthUser(c);
     if (!authUser) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const sellerOrders = await db
+    const businessOrders = await db
       .select({
         id: orders.id,
         buyerId: orders.buyerId,
-        sellerId: orders.sellerId,
+        businessId: orders.businessId,
         totalAmount: orders.totalAmount,
         status: orders.status,
         deliveryMethod: orders.deliveryMethod,
@@ -74,11 +76,11 @@ orderRoute.get("/seller", async (c) => {
       .from(orders)
       .leftJoin(users, eq(orders.buyerId, users.id))
       .leftJoin(payments, eq(orders.id, payments.orderId))
-      .where(eq(orders.sellerId, authUser.userId));
+      .where(eq(orders.businessId, authUser.userId));
 
-    return c.json(sellerOrders);
+    return c.json(businessOrders);
   } catch (error) {
-    console.error("Get seller orders error:", error);
+    console.error("Get business orders error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });
@@ -92,97 +94,200 @@ orderRoute.post("/", async (c) => {
 
     const body = await c.req.json();
     const {
-      sellerId,
-      totalAmount,
+      businessId,
       items,
       paymentMethod,
       deliveryMethod,
       deliveryAddress,
     } = body;
 
-    if (!items || items.length === 0)
+    if (!items || items.length === 0) {
       return c.json({ error: "Choose minimum 1 product!" }, 400);
-    if (deliveryMethod === "delivery" && !deliveryAddress) {
-      return c.json({ error: "Delivery requires delivery address" }, 400);
     }
 
-    try {
-      const result = await db.transaction(async (tx) => {
-        let calculatedTotal = 0;
+    if (deliveryMethod === "delivery" && !deliveryAddress) {
+      return c.json({ error: "Delivery requires location (lat, lng)" }, 400);
+    }
 
-        for (const item of items) {
-          const [product] = await tx
-            .select()
-            .from(products)
-            .where(eq(products.id, item.productId));
+    const result = await db.transaction(async (tx) => {
+      let totalAmount = 0;
+      let productType: string | null = null;
 
-          if (!product) throw new Error(`Product ${item.productId} not found!`);
-          if (Number(product.quantity) < item.quantity) {
-            throw new Error(`Insufficient stock for product ${product.title}`);
-          }
+      for (const item of items) {
+        const [product] = await tx
+          .select()
+          .from(products)
+          .where(eq(products.id, item.productId));
 
-          const newQuantity = Number(product.quantity) - item.quantity;
-          await tx
-            .update(products)
-            .set({ quantity: newQuantity })
-            .where(eq(products.id, item.productId));
+        if (!product) throw new Error(`Product ${item.productId} not found!`);
 
-          calculatedTotal += Number(item.price) * item.quantity;
+        if (productType && productType !== product.type) {
+          throw new Error("Order cannot mix different product types");
         }
 
-        const [newOrder] = await tx
-          .insert(orders)
-          .values({
-            buyerId: authUser.userId,
-            sellerId,
-            totalAmount: String(totalAmount || calculatedTotal),
-            status: "pending",
-            deliveryMethod,
-            deliveryAddress:
-              deliveryMethod === "delivery" ? deliveryAddress : null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .returning();
+        productType = product.type;
 
-        for (const item of items) {
-          await tx.insert(orderItems).values({
-            orderId: newOrder.id,
-            productId: item.productId,
-            quantity: item.quantity,
-            price: String(item.price),
-          });
+        if (Number(product.quantity) < item.quantity) {
+          throw new Error(`Insufficient stock for product ${product.title}`);
         }
 
-        const [newPayment] = await tx
-          .insert(payments)
-          .values({
-            orderId: newOrder.id,
-            status: "pending",
-            paymentMethod: paymentMethod ?? null,
-            createdAt: new Date(),
-          })
-          .returning();
+        await tx
+          .update(products)
+          .set({ quantity: Number(product.quantity) - item.quantity })
+          .where(eq(products.id, item.productId));
 
-        return {
-          order: newOrder,
-          payment: newPayment,
-        };
+        totalAmount += Number(item.price) * item.quantity;
+      }
+
+      const orderValues: Insertable<typeof orders> = {
+        buyerId: authUser.userId,
+        businessId: businessId ?? null,
+        totalAmount: totalAmount,
+        type: productType,
+        status: productType === "donation" ? "requested" : "pending",
+        deliveryMethod,
+        deliveryAddress:
+          deliveryMethod === "delivery"
+            ? JSON.stringify(deliveryAddress)
+            : null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const [newOrder] = await tx.insert(orders).values(orderValues).returning();
+
+      for (const item of items) {
+        await tx.insert(orderItems).values({
+          orderId: newOrder.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: productType === "donation" ? "0" : String(item.price),
+        });
+      }
+
+      if (productType === "donation") {
+        return { order: newOrder };
+      }
+
+      const [newPayment] = await tx
+        .insert(payments)
+        .values({
+          orderId: newOrder.id,
+          amount: totalAmount,
+          status: "pending",
+          paymentMethod: paymentMethod ?? null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      const transaction = await snap.createTransaction({
+        transaction_details: {
+          order_id: `order-${newOrder.id}`,
+          gross_amount: totalAmount,
+        },
+        enabled_payments: ["gopay", "shopeepay", "bank_transfer"],
+        callbacks: {
+          finish: "https://www.webtoons.com/id/",
+        },
       });
 
-      return c.json(result);
-    } catch (err: any) {
-      console.error("Order creation error:", err);
-      return c.json({ error: err.message }, 400);
-    }
-  } catch (error) {
-    console.error("Order creation error:", error);
-    return c.json({ error: "Internal server error" }, 500);
+      return {
+        order: newOrder,
+        payment: newPayment,
+        snapToken: transaction.token,
+        snapRedirectUrl: transaction.redirect_url,
+      };
+    });
+
+    return c.json(result);
+  } catch (err: any) {
+    return c.json({ error: err.message }, 400);
   }
 });
 
-// Create payment for existing order
-orderRoute.post("/:orderId/payment", async (c) => {
+
+
+orderRoute.post("/withdraw", async (c) => {
+    const {businessId, amount, status, destination, paymentMethod} = await c.req.json();
+    if ( amount<= 0) {
+        return c.json({error:"Amount must be greater than 0"}, 400);
+    }
+    if (!destination || destination=== "null") {
+        return c.json({error: "Required destination to transfer the money"}, 400);
+    }
+    if (!paymentMethod) {
+        return c.json({error: "there is no option"})
+    }
+
+    const [business] = await db
+    .select()
+    .from(businessProfiles)
+    .where(eq(businessProfiles.id, businessId));
+
+    if(!business) {
+        return c.json({ error: "Business not found"}, 404);
+    }   
+
+    if (Number(business.balance) < amount) {
+        return c.json({ error: "Insufficient balance"}, 400);
+    }
+
+    const newWithdraw = await db.transaction(async (tx) => { 
+    const [withDrawRecord] = await tx
+    .insert(withdraw)
+    .values({
+            businessId: businessId,
+            amount,
+            status: "pending" as withdrawStatus,
+            destination,
+            paymentMethod: paymentMethod ?? null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        })
+        .returning();
+
+        await tx
+        .update(businessProfiles)
+        .set({
+            balance: sql`${businessProfiles.balance} - ${amount}`,
+            updatedAt: new Date(), 
+        })
+        .where(eq(businessProfiles.id, businessId));
+        return withDrawRecord;});
+
+        return c.json({ 
+            success: true, 
+            withdraw: newWithdraw,
+            message: "Withdraw request created successfully",
+        });
+});
+
+// Midtrans Notification (Webhook)
+type OrderStatus =
+  | "pending"
+  | "requested"
+  | "paid"
+  | "delivered"
+  | "ready"
+  | "completed"
+  | "cancelled"
+  | "expired"
+  | "denied";
+
+  type PaymentStatus =
+  | "pending"
+  | "success"
+  | "failed";
+
+    type withdrawStatus =
+  | "pending"
+  | "success"
+  | "failed";
+
+
+
+orderRoute.post("/notification", async (c) => {
   try {
     const authUser = await getAuthUser(c);
     if (!authUser) {
@@ -237,6 +342,49 @@ orderRoute.post("/:orderId/payment", async (c) => {
     });
 
     // Update payment with transaction ID
+    const body = await c.req.json();
+    const orderId = body.order_id?.replace("order-", "");
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(orderId)))
+    const transactionStatus = body.transaction_status;
+
+    const paymentStatusMap: Record<string, PaymentStatus> = {
+    success: "success",
+    pending: "pending",
+    failed: "failed",
+    };
+
+const newPaymentStatus: PaymentStatus =
+  paymentStatusMap[transactionStatus] ?? "pending";
+
+    const statusMap: Record<string, OrderStatus> = {
+      settlement: "paid",
+      capture: "paid",
+      expire: "expired",
+      cancel: "cancelled",
+      deny: "denied",
+    };
+
+    const newStatus: OrderStatus = statusMap[transactionStatus] ?? "pending";
+    
+    if (newPaymentStatus === "success") {
+        if (order) {
+        await db
+        .update(businessProfiles)
+        .set({
+            balance: sql`${businessProfiles.balance} + ${body.gross_amount}`,
+            updatedAt: new Date(),
+        })
+        .where(eq(businessProfiles.id, Number(order.businessId)));
+    }}
+    
+    if (!statusMap[transactionStatus]) {
+      console.warn("⚠️ Unhandled Midtrans status:", transactionStatus);
+    }
+
+    if (!orderId) {
+      return c.json({ error: "Invalid order_id" }, 400);
+    }
+
     await db
       .update(payments)
       .set({
@@ -327,17 +475,35 @@ orderRoute.patch("/:orderId/status", async (c) => {
       return c.json({ error: "Invalid status" }, 400);
     }
 
-    // Check if the order belongs to the authenticated seller
+    // Check if the order belongs to the authenticated business
     const order = await db
       .select()
       .from(orders)
       .where(eq(orders.id, parseInt(orderId)));
 
     if (order.length === 0) {
+
+// Allowed status per mode
+   type OrderType = "sell" | "donation";
+    const allowedStatusesMap: Record<OrderType, OrderStatus[]> = {
+    sell: ["ready", "delivered", "completed", "cancelled"],
+    donation: ["requested", "pending", "completed", "cancelled"],
+    };
+    
+// business / Charity update order status
+orderRoute.patch("/:id/status", async (c) => {
+  try {
+    const orderId = Number(c.req.param("id"));
+    const body = await c.req.json<{ status: OrderStatus }>();
+    const { status } = body;
+
+    // Cari order dulu
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) {
       return c.json({ error: "Order not found" }, 404);
     }
 
-    if (order[0].sellerId !== authUser.userId) {
+    if (order[0].businessId !== authUser.userId) {
       return c.json({ error: "Unauthorized - Not your order" }, 403);
     }
 
