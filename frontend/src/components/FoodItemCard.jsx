@@ -72,8 +72,8 @@ export function FoodItemCard({ item, onAddToCart }) {
       </CardContent>
 
       <CardFooter className="p-4 pt-0">
-        <Button className="w-full" disabled={item.quantity === 0}>
-          <Link to="/checkout/asd" className="flex flex-row">
+        <Button className="w-full" disabled={item.quantity === 0} asChild>
+          <Link to={`/checkout/${item.id}`}>
             <ShoppingCart className="h-4 w-4 mr-2" />
             {item.quantity === 0 ? "Sold Out" : "Order Now"}
           </Link>

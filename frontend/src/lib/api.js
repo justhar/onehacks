@@ -54,4 +54,130 @@ export const api = {
     });
     return response.json();
   },
+
+  // Product endpoints
+  getProducts: async () => {
+    const response = await fetch(`${API_BASE_URL}/productRoute`);
+    return response.json();
+  },
+
+  getProductsNearby: async (lat, lng, radius = 1) => {
+    const response = await fetch(`${API_BASE_URL}/productRoute/product-nearby?lat=${lat}&lng=${lng}&radius=${radius}`);
+    return response.json();
+  },
+
+  getProductById: async (id) => {
+    const response = await fetch(`${API_BASE_URL}/productRoute/${id}`);
+    return response.json();
+  },
+
+  getProductsBySeller: async (sellerId) => {
+    const response = await fetch(`${API_BASE_URL}/productRoute/seller/${sellerId}`);
+    return response.json();
+  },
+
+  createProduct: async (token, productData) => {
+    const response = await fetch(`${API_BASE_URL}/productRoute`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(productData),
+    });
+    return response.json();
+  },
+
+  updateProduct: async (token, id, productData) => {
+    const response = await fetch(`${API_BASE_URL}/productRoute/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(productData),
+    });
+    return response.json();
+  },
+
+  deleteProduct: async (token, id) => {
+    const response = await fetch(`${API_BASE_URL}/productRoute/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return response.json();
+  },
+
+  // Order endpoints
+  createOrder: async (token, orderData) => {
+    const response = await fetch(`${API_BASE_URL}/orderRoute`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(orderData),
+    });
+    return response.json();
+  },
+
+  getOrders: async (token) => {
+    const response = await fetch(`${API_BASE_URL}/orderRoute`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return response.json();
+  },
+
+  getSellerOrders: async (token) => {
+    const response = await fetch(`${API_BASE_URL}/orderRoute/seller`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return response.json();
+  },
+
+  // Payment endpoints
+  createPayment: async (token, orderId) => {
+    const response = await fetch(`${API_BASE_URL}/orderRoute/${orderId}/payment`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return response.json();
+  },
+
+  getPaymentStatus: async (orderId) => {
+    const response = await fetch(`${API_BASE_URL}/webhook/payment-status/${orderId}`);
+    return response.json();
+  },
+
+  updatePaymentSuccess: async (token, orderId, transactionId) => {
+    const response = await fetch(`${API_BASE_URL}/orderRoute/${orderId}/payment-success`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ transactionId }),
+    });
+    return response.json();
+  },
+
+  updateOrderStatus: async (token, orderId, status) => {
+    const response = await fetch(`${API_BASE_URL}/orderRoute/${orderId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status }),
+    });
+    return response.json();
+  },
 };

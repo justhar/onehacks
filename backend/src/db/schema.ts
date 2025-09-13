@@ -19,22 +19,24 @@ export const orderStatusEnum = pgEnum("order_status", [
   "ready",
   "completed",
   "cancelled",
-  ]);
+]);
 
-  export const paymentStatusEnum = pgEnum("payment_status",[
-    "pending",
-    "success",
-    "failed",
-  ]);
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "pending",
+  "success",
+  "failed",
+]);
 
-  export const paymentMethodEnum = pgEnum("payment_method", [
-    "gopay",
-    "ovo",
-    "transfer",
-  ]);
+export const paymentMethodEnum = pgEnum("payment_method", [
+  "gopay",
+  "ovo",
+  "transfer",
+]);
 
-  export const deliveryMethodEnum = pgEnum("delivery_method", ["delivery", "pickup"]);
-
+export const deliveryMethodEnum = pgEnum("delivery_method", [
+  "delivery",
+  "pickup",
+]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -68,17 +70,20 @@ export const businessProfiles = pgTable("business_profiles", {
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   sellerId: integer("seller_id")
-  .references(() => users.id)
-  .notNull(),
-  title: varchar("title", {length: 255}).notNull(),
+    .references(() => users.id)
+    .notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 100 }),
   imageUrl: text("image_url"),
   latitude: varchar("latitude", { length: 50 }),
   longitude: varchar("longitude", { length: 50 }),
-  price: numeric("price", {precision: 10, scale: 2}).notNull(),
-  discount: numeric("discount", {precision: 5, scale: 2}).default("0"),
-  finalPrice: numeric("final_price", {precision: 10, scale: 2}),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  discount: numeric("discount", { precision: 5, scale: 2 }).default("0"),
+  finalPrice: numeric("final_price", { precision: 10, scale: 2 }),
   expiryDate: timestamp("expiry_date"),
   quantity: integer("quantity").default(0),
+  rating: numeric("rating", { precision: 3, scale: 2 }).default("0"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -86,12 +91,12 @@ export const products = pgTable("products", {
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   buyerId: integer("buyer_id")
-  .references(()=> users.id)
-  .notNull(),
+    .references(() => users.id)
+    .notNull(),
   sellerId: integer("seller_id")
-  .references(()=>users.id)
-  .notNull(),
-  totalAmount: numeric("total_amount", {precision: 10, scale: 2}).notNull(),
+    .references(() => users.id)
+    .notNull(),
+  totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
   status: orderStatusEnum("status").default("pending"),
   deliveryMethod: deliveryMethodEnum("delivery_method").notNull(),
   deliveryAddress: text("delivery_address"),
@@ -99,25 +104,25 @@ export const orders = pgTable("orders", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const orderItems =  pgTable("order_items", {
+export const orderItems = pgTable("order_items", {
   id: serial("id").primaryKey(),
   orderId: integer("order_id")
-  .references(()=>orders.id)
-  .notNull(),
+    .references(() => orders.id)
+    .notNull(),
   productId: integer("product_id")
-  .references(()=>products.id)
-  .notNull(),
+    .references(() => products.id)
+    .notNull(),
   quantity: integer("quantity").notNull(),
-  price: numeric("price", {precision: 10, scale: 2}).notNull(),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
 });
 
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
   orderId: integer("order_id")
-  .references(()=> orders.id)
-  .notNull(),
+    .references(() => orders.id)
+    .notNull(),
   status: paymentStatusEnum("status").default("pending"),
   paymentMethod: paymentMethodEnum("payment_method"),
-  transactionId: varchar("transaction_id", {length: 255}),
+  transactionId: varchar("transaction_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
 });

@@ -44,17 +44,39 @@ export const LocationMarker = ({ position, setPosition, setFormData }) => {
       // Reverse geocoding to get address
       try {
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+          {
+            method: "GET",
+            headers: {
+              "User-Agent": "OneHacks-FoodMarketplace/1.0",
+            },
+          }
         );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
         if (data.display_name) {
           setFormData((prev) => ({
             ...prev,
             address: data.display_name,
           }));
+        } else {
+          // Fallback: set coordinates as address if reverse geocoding fails
+          setFormData((prev) => ({
+            ...prev,
+            address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+          }));
         }
       } catch (error) {
         console.error("Reverse geocoding failed:", error);
+        // Fallback: set coordinates as address
+        setFormData((prev) => ({
+          ...prev,
+          address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+        }));
       }
     },
   });
@@ -66,7 +88,12 @@ export const LocationMarker = ({ position, setPosition, setFormData }) => {
   return position ? <Marker position={position} /> : null;
 };
 
-export function MarketplaceHeader({ onSearch, onSort, onToggleFilters }) {
+export function MarketplaceHeader({
+  onSearch,
+  onSort,
+  onToggleFilters,
+  onLocationChange,
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     address: "",
@@ -75,25 +102,76 @@ export function MarketplaceHeader({ onSearch, onSort, onToggleFilters }) {
 
   const [position, setPosition] = useState([51.505, -0.09]); // Default to London
   const [addressSuggestions, setAddressSuggestions] = useState([]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (window.addressSearchTimeout) {
+        clearTimeout(window.addressSearchTimeout);
+      }
+    };
+  }, []);
+
+  const handleAddressSelect = (suggestion) => {
+    const lat = parseFloat(suggestion.lat);
+    const lng = parseFloat(suggestion.lon);
+    setPosition([lat, lng]);
+    setFormData((prev) => ({
+      ...prev,
+      address: suggestion.display_name,
+    }));
+    setAddressSuggestions([]);
+  };
+
+  const handleSetLocation = () => {
+    if (position && position.length === 2) {
+      onLocationChange?.({
+        lat: position[0],
+        lng: position[1],
+        address: formData.address,
+      });
+    }
+  };
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
 
-    if (e.target.name === "address") {
-      fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          e.target.value
-        )}&addressdetails=1&limit=5`
-      )
-        .then((res) => res.json())
-        .then((data) => {
-          setAddressSuggestions(data);
-        })
-        .catch((err) => {
+    if (e.target.name === "address" && e.target.value.length > 2) {
+      // Debounce the API call to avoid too many requests
+      clearTimeout(window.addressSearchTimeout);
+      window.addressSearchTimeout = setTimeout(async () => {
+        try {
+          // Try with a more reliable endpoint and proper headers
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+              e.target.value
+            )}&addressdetails=1&limit=5&countrycodes=id`, // Focus on Indonesia
+            {
+              method: "GET",
+              headers: {
+                "User-Agent": "OneHacks-FoodMarketplace/1.0",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          setAddressSuggestions(data || []);
+        } catch (err) {
           console.error("Error fetching address suggestions:", err);
-        });
+          // Clear suggestions on error
+          setAddressSuggestions([]);
+        }
+      }, 500); // 500ms debounce
+    } else if (e.target.name === "address" && e.target.value.length <= 2) {
+      // Clear suggestions for short queries
+      setAddressSuggestions([]);
     }
   };
 
@@ -114,14 +192,15 @@ export function MarketplaceHeader({ onSearch, onSort, onToggleFilters }) {
       <div className="flex flex-col sm:flex-row gap-4">
         <Dialog>
           <DialogTrigger asChild>
-            <div className="relative flex py-2 sm:py-0 flex-row gap-2 items-center border rounded-md bg-foreground">
-              <MapPin className="h-5 w-5 ml-3 text-accent" />
-              <div>
-                <span className="text-sm text-accent font-medium">
-                  Location:{" "}
-                </span>
-                <span className="font-medium text-sm mr-4 text-accent">
-                  Bla bla
+            <div className="relative flex py-2 sm:py-0 flex-row gap-2 items-center border rounded-md bg-foreground max-w-[300px]">
+              <MapPin className="h-5 w-5 ml-3 text-accent flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="font-medium text-sm mr-4 text-accent block truncate">
+                  {formData.address
+                    ? formData.address.length > 30
+                      ? `${formData.address.substring(0, 30)}...`
+                      : formData.address
+                    : "Click to set location"}
                 </span>
               </div>
             </div>
@@ -194,7 +273,9 @@ export function MarketplaceHeader({ onSearch, onSort, onToggleFilters }) {
                 </div>
               </div>
               <DialogFooter className="mt-4">
-                <Button>Set Location</Button>
+                <DialogClose asChild>
+                  <Button onClick={handleSetLocation}>Set Location</Button>
+                </DialogClose>
                 <DialogClose asChild>
                   <Button variant="outline">Cancel</Button>
                 </DialogClose>

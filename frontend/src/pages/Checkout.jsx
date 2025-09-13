@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,44 +22,115 @@ import {
   ArrowLeft,
   Star,
 } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import Navigation from "@/components/Navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 
-// Mock item data - in real app this would come from cart/item selection
-const mockItem = {
-  id: "1",
-  name: "Pasta Primavera",
-  description:
-    "Fresh seasonal vegetables with penne pasta in a light cream sauce",
-  originalPrice: 18.99,
-  discountedPrice: 12.99,
-  restaurant: "Green Bistro",
-  category: "Main Dishes",
-  rating: 4.8,
-  image: "/pasta-primavera-dish.jpg",
-  quantity: 1,
-};
 export default function Checkout() {
+  const { id } = useParams();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const itemName = searchParams.get("item") || mockItem.name;
+  
+  const [product, setProduct] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [deliveryOption, setDeliveryOption] = useState("pickup");
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [phone, setPhone] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [isOrdering, setIsOrdering] = useState(false);
+  const [error, setError] = useState("");
 
-  const subtotal = mockItem.discountedPrice;
-  const deliveryFee = deliveryOption === "delivery" ? 2.99 : 0;
-  const tax = (subtotal + deliveryFee) * 0.08;
-  const total = subtotal + deliveryFee + tax;
-  const handlePlaceOrder = () => {
-    // In real app, this would process the order
-    navigate(
-      `/order-confirmation?item=${encodeURIComponent(
-        itemName
-      )}&delivery=${deliveryOption}`
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+
+      try {
+        setIsLoading(true);
+        const response = await api.getProductById(id);
+        setProduct(response);
+      } catch (error) {
+        console.error("Failed to fetch product:", error);
+        setError("Failed to load product details");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
     );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Product not found</h2>
+          <Button onClick={() => navigate("/marketplace")}>
+            Back to Marketplace
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const subtotal = parseFloat(product.finalPrice || product.price);
+  const deliveryFee = deliveryOption === "delivery" ? 2.99 : 0;
+  // const tax = (subtotal + deliveryFee) * 0.08;
+  const total = subtotal + deliveryFee;
+
+  const handlePlaceOrder = async () => {
+    if (!user || !token) {
+      setError("Please login to place an order");
+      return;
+    }
+
+    if (deliveryOption === "delivery" && !address.trim()) {
+      setError("Please provide a delivery address");
+      return;
+    }
+
+    try {
+      setIsOrdering(true);
+      setError("");
+
+      const orderData = {
+        sellerId: product.sellerId,
+        totalAmount: total.toFixed(2),
+        deliveryMethod: deliveryOption,
+        deliveryAddress: deliveryOption === "delivery" ? address : null,
+        items: [
+          {
+            productId: product.id,
+            quantity,
+            price: product.finalPrice || product.price,
+          },
+        ],
+      };
+
+      const response = await api.createOrder(token, orderData);
+
+      if (response.error) {
+        setError(response.error);
+      } else {
+        // Navigate to order details page
+        navigate(`/order/${response.order.id}`);
+      }
+    } catch (error) {
+      console.error("Order creation error:", error);
+      setError("Failed to place order. Please try again.");
+    } finally {
+      setIsOrdering(false);
+    }
   };
 
   return (
@@ -243,31 +314,40 @@ export default function Checkout() {
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-1">
                       <h5 className="font-medium text-foreground">
-                        {mockItem.name}
+                        {product.title}
                       </h5>
                       <div className="flex items-center space-x-1 text-sm">
                         <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                         <span className="text-muted-foreground">
-                          {mockItem.rating}
+                          {product.rating || "4.5"}
                         </span>
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
-                      {mockItem.description}
+                      {product.description}
                     </p>
                     <div className="flex items-center justify-between">
-                      <Badge variant="outline">{mockItem.category}</Badge>
+                      <Badge variant="outline">{product.category}</Badge>
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-muted-foreground line-through">
-                          ${mockItem.originalPrice}
-                        </span>
-                        <span className="font-semibold text-primary">
-                          ${mockItem.discountedPrice}
-                        </span>
+                        {product.discount && product.discount > 0 ? (
+                          <>
+                            <span className="text-sm text-muted-foreground line-through">
+                              Rp {parseFloat(product.price).toLocaleString()}
+                            </span>
+                            <span className="font-semibold text-primary">
+                              Rp{" "}
+                              {parseFloat(product.finalPrice).toLocaleString()}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="font-semibold text-primary">
+                            Rp {parseFloat(product.price).toLocaleString()}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      From {mockItem.restaurant}
+                      From {product.businessName || "Restaurant"}
                     </p>
                   </div>
                 </div>
@@ -279,7 +359,7 @@ export default function Checkout() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="text-foreground">
-                      ${subtotal.toFixed(2)}
+                      Rp {subtotal.toLocaleString()}
                     </span>
                   </div>
                   {deliveryOption === "delivery" && (
@@ -288,23 +368,43 @@ export default function Checkout() {
                         Delivery Fee
                       </span>
                       <span className="text-foreground">
-                        ${deliveryFee.toFixed(2)}
+                        Rp {deliveryFee.toFixed(2)}
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span className="text-foreground">${tax.toFixed(2)}</span>
-                  </div>
+                  {/* <div className="flex justify-between text-sm"> */}
+                  {/* <span className="text-muted-foreground">Tax</span> */}
+                  {/* <span className="text-foreground">Rp {tax.toFixed(2)}</span> */}
+                  {/* </div> */}
                   <Separator />
                   <div className="flex justify-between font-semibold">
                     <span className="text-foreground">Total</span>
-                    <span className="text-primary">${total.toFixed(2)}</span>
+                    <span className="text-primary">
+                      Rp {total.toLocaleString()}
+                    </span>
                   </div>
                 </div>
 
-                <Button onClick={handlePlaceOrder} className="w-full" size="lg">
-                  Place Order
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
+
+                <Button
+                  onClick={handlePlaceOrder}
+                  className="w-full"
+                  size="lg"
+                  disabled={isOrdering}
+                >
+                  {isOrdering ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Placing Order...
+                    </>
+                  ) : (
+                    "Place Order"
+                  )}
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,138 +12,138 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
+import { useNavigate } from "react-router";
 
-// Mock orders data
-const mockOrders = [
-  {
-    id: "ORD-2024-003",
-    status: "preparing",
-    orderDate: "2024-01-15",
-    estimatedTime: "Today, 3:00 PM - 4:00 PM",
-    deliveryType: "pickup",
-    restaurant: {
-      name: "Green Bistro",
-      address: "123 Main St, Downtown",
-      phone: "(555) 123-4567",
-    },
-    items: [
-      {
-        name: "Pasta Primavera",
-        description: "Fresh seasonal vegetables with penne pasta",
-        originalPrice: 18.99,
-        discountedPrice: 12.99,
-        quantity: 1,
-        rating: 4.8,
-      },
-    ],
-    total: 14.03,
-  },
-  {
-    id: "ORD-2024-002",
-    status: "completed",
-    orderDate: "2024-01-14",
-    estimatedTime: "Yesterday, 2:00 PM",
-    deliveryType: "delivery",
-    restaurant: {
-      name: "Farm Table",
-      address: "456 Oak Ave, Midtown",
-      phone: "(555) 987-6543",
-    },
-    items: [
-      {
-        name: "Artisan Sourdough Bread",
-        description: "Freshly baked sourdough bread",
-        originalPrice: 8.99,
-        discountedPrice: 4.99,
-        quantity: 2,
-        rating: 4.9,
-      },
-    ],
-    total: 12.97,
-  },
-  {
-    id: "ORD-2024-001",
-    status: "cancelled",
-    orderDate: "2024-01-13",
-    estimatedTime: "Jan 13, 5:00 PM",
-    deliveryType: "pickup",
-    restaurant: {
-      name: "Urban Kitchen",
-      address: "789 Pine St, Uptown",
-      phone: "(555) 456-7890",
-    },
-    items: [
-      {
-        name: "Caesar Salad",
-        description: "Crisp romaine lettuce with parmesan cheese",
-        originalPrice: 14.99,
-        discountedPrice: 9.99,
-        quantity: 1,
-        rating: 4.6,
-      },
-    ],
-    total: 10.79,
-  },
-];
-
-const getStatusIcon = (status) => {
-  switch (status) {
-    case "preparing":
-      return <Clock className="h-4 w-4" />;
-    case "ready":
-      return <Package className="h-4 w-4" />;
-    case "completed":
-      return <CheckCircle className="h-4 w-4" />;
-    case "cancelled":
-      return <XCircle className="h-4 w-4" />;
-    default:
-      return <Clock className="h-4 w-4" />;
-  }
-};
-
-const getStatusColor = (status) => {
-  switch (status) {
-    case "preparing":
-      return "bg-blue-100 text-blue-800";
-    case "ready":
-      return "bg-green-100 text-green-800";
-    case "completed":
-      return "bg-gray-100 text-gray-800";
-    case "cancelled":
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
-
-export default function Orders() {
+export default function OrdersPage() {
+  const { token } = useAuth();
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
 
-  const filterOrders = (status) => {
-    if (status === "all") return mockOrders;
-    if (status === "active")
-      return mockOrders.filter((order) =>
-        ["preparing", "ready"].includes(order.status)
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!token) return;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await api.getOrders(token);
+        setOrders(response);
+      } catch (error) {
+        setError("Failed to load orders");
+        console.error("Orders fetch error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [token]);
+
+  const getFilteredOrders = (status) => {
+    if (status === "all") return orders;
+
+    if (status === "active") {
+      return orders.filter((order) =>
+        ["pending", "paid", "ready"].includes(order.status)
       );
-    return mockOrders.filter((order) => order.status === status);
+    }
+    return orders.filter((order) => order.status === status);
   };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "pending":
+      case "paid":
+        return <Clock className="h-4 w-4" />;
+      case "ready":
+        return <Package className="h-4 w-4" />;
+      case "completed":
+      case "delivered":
+        return <CheckCircle className="h-4 w-4" />;
+      case "cancelled":
+        return <XCircle className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "paid":
+        return "bg-blue-100 text-blue-800";
+      case "ready":
+        return "bg-green-100 text-green-800";
+      case "completed":
+      case "delivered":
+        return "bg-gray-100 text-gray-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="ml-4 text-lg text-muted-foreground">Loading orders...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-lg text-red-600">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   const OrderCard = ({ order }) => (
     <Card className="mb-4">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">{order.id}</CardTitle>
-          <Badge
-            className={`${getStatusColor(
-              order.status
-            )} flex items-center gap-1`}
-          >
-            {getStatusIcon(order.status)}
-            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-          </Badge>
+          <CardTitle className="text-lg">Order #{order.id}</CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge
+              className={`${getStatusColor(
+                order.status
+              )} flex items-center gap-1`}
+            >
+              {getStatusIcon(order.status)}
+              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+            </Badge>
+            <Badge
+              variant={
+                order.paymentStatus === "success" ? "default" : "destructive"
+              }
+              className="flex items-center gap-1"
+            >
+              {order.paymentStatus === "success" ? (
+                <CheckCircle className="h-3 w-3" />
+              ) : (
+                <XCircle className="h-3 w-3" />
+              )}
+              {order.paymentStatus === "success" ? "Paid" : "Unpaid"}
+            </Badge>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          Ordered on {order.orderDate}
+          Ordered on {new Date(order.createdAt).toLocaleDateString()}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -152,19 +152,16 @@ export default function Orders() {
           <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
           <div className="flex-1">
             <h4 className="font-semibold text-foreground">
-              {order.restaurant.name}
+              {order.sellerName || "Unknown Restaurant"}
             </h4>
-            <p className="text-sm text-muted-foreground">
-              {order.restaurant.address}
-            </p>
             <div className="flex items-center gap-2 mt-1">
-              {order.deliveryType === "delivery" ? (
+              {order.deliveryMethod === "delivery" ? (
                 <Truck className="h-3 w-3 text-primary" />
               ) : (
                 <Package className="h-3 w-3 text-primary" />
               )}
               <span className="text-sm text-primary font-medium">
-                {order.deliveryType === "delivery" ? "Delivery" : "Pickup"}
+                {order.deliveryMethod === "delivery" ? "Delivery" : "Pickup"}
               </span>
             </div>
           </div>
@@ -173,62 +170,25 @@ export default function Orders() {
         {/* Time Info */}
         <div className="flex items-center space-x-2 text-sm">
           <Clock className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground">{order.estimatedTime}</span>
-        </div>
-
-        {/* Items */}
-        <div className="space-y-2">
-          {order.items.map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-2 border rounded"
-            >
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h5 className="font-medium text-foreground">{item.name}</h5>
-                  <div className="flex items-center space-x-1 text-xs">
-                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                    <span className="text-muted-foreground">{item.rating}</span>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {item.description}
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center space-x-1">
-                  <span className="text-xs text-muted-foreground line-through">
-                    ${item.originalPrice}
-                  </span>
-                  <span className="font-semibold text-primary">
-                    ${item.discountedPrice}
-                  </span>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  × {item.quantity}
-                </span>
-              </div>
-            </div>
-          ))}
+          <span className="text-muted-foreground">
+            Status updated: {new Date(order.updatedAt).toLocaleString()}
+          </span>
         </div>
 
         {/* Total and Actions */}
         <div className="flex items-center justify-between pt-2 border-t">
           <div className="font-semibold">
-            Total: <span className="text-primary">${order.total}</span>
+            Total:{" "}
+            <span className="text-primary">
+              ${parseFloat(order.totalAmount).toFixed(2)}
+            </span>
           </div>
           <div className="flex gap-2">
-            {order.status === "preparing" && (
-              <Button variant="outline" size="sm">
-                Track Order
-              </Button>
-            )}
-            {order.status === "completed" && (
-              <Button variant="outline" size="sm">
-                Reorder
-              </Button>
-            )}
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`/order/${order.id}`)}
+            >
               View Details
             </Button>
           </div>
@@ -256,18 +216,24 @@ export default function Orders() {
 
         <TabsContent value="all" className="mt-6">
           <div className="space-y-4">
-            {filterOrders("all").map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))}
+            {getFilteredOrders("all").length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-lg text-muted-foreground">No orders found</p>
+                <p className="text-sm text-muted-foreground">
+                  Your orders will appear here
+                </p>
+              </div>
+            ) : (
+              getFilteredOrders("all").map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="active" className="mt-6">
           <div className="space-y-4">
-            {filterOrders("active").map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))}
-            {filterOrders("active").length === 0 && (
+            {getFilteredOrders("active").length === 0 ? (
               <div className="text-center py-12">
                 <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-lg text-muted-foreground">
@@ -277,23 +243,49 @@ export default function Orders() {
                   Your current orders will appear here
                 </p>
               </div>
+            ) : (
+              getFilteredOrders("active").map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))
             )}
           </div>
         </TabsContent>
 
         <TabsContent value="completed" className="mt-6">
           <div className="space-y-4">
-            {filterOrders("completed").map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))}
+            {getFilteredOrders("completed").length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-lg text-muted-foreground">
+                  No completed orders
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Completed orders will appear here
+                </p>
+              </div>
+            ) : (
+              getFilteredOrders("completed").map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="cancelled" className="mt-6">
           <div className="space-y-4">
-            {filterOrders("cancelled").map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))}
+            {getFilteredOrders("cancelled").length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-lg text-muted-foreground">
+                  No cancelled orders
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Cancelled orders will appear here
+                </p>
+              </div>
+            ) : (
+              getFilteredOrders("cancelled").map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))
+            )}
           </div>
         </TabsContent>
       </Tabs>

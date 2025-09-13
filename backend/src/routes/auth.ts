@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
 import db from "../lib/db.js";
-import { users } from "../db/schema.js";
+import { users, businessProfiles } from "../db/schema.js";
 import {
   hashPassword,
   comparePassword,
@@ -17,7 +17,7 @@ auth.post("/register", async (c) => {
     const { email, fullName, password, userType } = await c.req.json();
 
     // Validate required fields
-    if (!email || !fullName || !password || !userType ) {
+    if (!email || !fullName || !password || !userType) {
       return c.json({ error: "All fields are required" }, 400);
     }
 
@@ -127,6 +127,18 @@ auth.get("/me", async (c) => {
       return c.json({ error: "User not found" }, 404);
     }
 
+    // If user is a business, also fetch business profile
+    let businessProfile = null;
+    if (user[0].userType === "business") {
+      const profile = await db
+        .select()
+        .from(businessProfiles)
+        .where(eq(businessProfiles.userId, user[0].id));
+      if (profile.length > 0) {
+        businessProfile = profile[0];
+      }
+    }
+
     return c.json({
       user: {
         id: user[0].id,
@@ -134,6 +146,7 @@ auth.get("/me", async (c) => {
         fullName: user[0].fullName,
         userType: user[0].userType,
         isOnboardingCompleted: user[0].isOnboardingCompleted,
+        businessProfile,
       },
     });
   } catch (error) {
