@@ -169,16 +169,18 @@ orderRoute.post("/", async (c) => {
         return { order: newOrder };
       }
 
-      const [newPayment] = await tx
+      const paymentValues: Insertable<typeof payments> = {
+        orderId: newOrder.id,
+        amount: totalAmount,
+        status: "pending",
+        paymentMethod: paymentMethod ?? null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        };
+
+        const [newPayment] = await tx
         .insert(payments)
-        .values({
-          orderId: newOrder.id,
-          amount: totalAmount,
-          status: "pending",
-          paymentMethod: paymentMethod ?? null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
+        .values(paymentValues)
         .returning();
 
       const transaction = await snap.createTransaction({
@@ -285,78 +287,70 @@ type OrderStatus =
   | "success"
   | "failed";
 
-
-
-orderRoute.post("/notification", async (c) => {
+orderRoute.post("/initiate", async (c) => {
   try {
     const authUser = await getAuthUser(c);
-    if (!authUser) {
-      return c.json({ error: "Unauthorized" }, 401);
-    }
+    if (!authUser) return c.json({ error: "Unauthorized" }, 401);
 
-    const { orderId } = c.req.param();
+    const { orderId } = await c.req.json();
 
-    // Get order details
-    const order = await db
+    const [order] = await db
       .select()
       .from(orders)
-      .where(eq(orders.id, parseInt(orderId)));
+      .where(eq(orders.id, Number(orderId)));
 
-    if (order.length === 0) {
-      return c.json({ error: "Order not found" }, 404);
-    }
+    if (!order) return c.json({ error: "Order not found" }, 404);
+    if (order.buyerId !== authUser.userId) return c.json({ error: "Forbidden" }, 403);
 
-    // Check if user owns this order
-    if (order[0].buyerId !== authUser.userId) {
-      return c.json({ error: "Unauthorized" }, 403);
-    }
-
-    // Check if already paid
-    const payment = await db
-      .select()
-      .from(payments)
-      .where(eq(payments.orderId, parseInt(orderId)));
-
-    if (payment.length > 0 && payment[0].status === "success") {
-      return c.json({ error: "Order already paid" }, 400);
-    }
-
-    // If payment exists but not completed, return existing token
-    if (payment.length > 0 && payment[0].transactionId) {
-      return c.json({
-        snapToken: payment[0].transactionId,
-        snapEmbedUrl: `https://app.sandbox.midtrans.com/snap/v1/transactions/${payment[0].transactionId}/embed`,
-      });
-    }
-
-    // Create unique transaction ID to avoid Midtrans order_id collision
     const uniqueOrderId = `order-${orderId}-${Date.now()}`;
 
-    // Create Midtrans transaction
     const transaction = await snap.createTransaction({
       transaction_details: {
         order_id: uniqueOrderId,
-        gross_amount: Number(order[0].totalAmount),
+        gross_amount: Number(order.totalAmount),
       },
       enabled_payments: ["gopay", "shopeepay", "bank_transfer", "credit_card"],
     });
 
-    // Update payment with transaction ID
+    await db
+      .update(payments)
+      .set({
+        transactionId: transaction.token,
+        updatedAt: new Date(),
+      })
+      .where(eq(payments.orderId, Number(orderId)));
+
+    return c.json({
+      snapToken: transaction.token,
+      snapEmbedUrl: `https://app.sandbox.midtrans.com/snap/v1/transactions/${transaction.token}/embed`,
+    });
+  } catch (err) {
+    console.error("Initiate Payment Error:", err);
+    return c.json({ error: "Failed to initiate payment" }, 500);
+  }
+});
+
+orderRoute.post("/webhook", async (c) => {
+  try {
     const body = await c.req.json();
-    const orderId = body.order_id?.replace("order-", "");
-    const [order] = await db.select().from(orders).where(eq(orders.id, Number(orderId)))
+    const orderId = body.order_id?.replace("order-", "").split("-")[0]; // ambil ID asli
+
+    const [order] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, Number(orderId)));
+
+    if (!order) return c.json({ error: "Order not found" }, 404);
+
     const transactionStatus = body.transaction_status;
 
     const paymentStatusMap: Record<string, PaymentStatus> = {
-    success: "success",
-    pending: "pending",
-    failed: "failed",
+      success: "success",
+      pending: "pending",
+      failed: "failed",
     };
 
-const newPaymentStatus: PaymentStatus =
-  paymentStatusMap[transactionStatus] ?? "pending";
-
-    const statusMap: Record<string, OrderStatus> = {
+    const orderStatusMap: Record<string, OrderStatus> = {
       settlement: "paid",
       capture: "paid",
       expire: "expired",
@@ -364,41 +358,44 @@ const newPaymentStatus: PaymentStatus =
       deny: "denied",
     };
 
-    const newStatus: OrderStatus = statusMap[transactionStatus] ?? "pending";
-    
-    if (newPaymentStatus === "success") {
-        if (order) {
-        await db
-        .update(businessProfiles)
-        .set({
-            balance: sql`${businessProfiles.balance} + ${body.gross_amount}`,
-            updatedAt: new Date(),
-        })
-        .where(eq(businessProfiles.id, Number(order.businessId)));
-    }}
-    
-    if (!statusMap[transactionStatus]) {
-      console.warn("⚠️ Unhandled Midtrans status:", transactionStatus);
-    }
-
-    if (!orderId) {
-      return c.json({ error: "Invalid order_id" }, 400);
-    }
+    const newPaymentStatus = paymentStatusMap[transactionStatus] ?? "pending";
+    const newOrderStatus = orderStatusMap[transactionStatus] ?? "pending";
 
     await db
       .update(payments)
       .set({
-        transactionId: transaction.token,
+        status: newPaymentStatus,
+        updatedAt: new Date(),
       })
-      .where(eq(payments.orderId, parseInt(orderId)));
+      .where(eq(payments.orderId, Number(orderId)));
+
+    await db
+      .update(orders)
+      .set({
+        status: newOrderStatus,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, Number(orderId)));
+
+    if (newPaymentStatus === "success") {
+      await db
+        .update(businessProfiles)
+        .set({
+          balance: sql`${businessProfiles.balance} + ${body.gross_amount}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(businessProfiles.id, Number(order.businessId)));
+    }
 
     return c.json({
-      snapToken: transaction.token,
-      snapEmbedUrl: `https://app.sandbox.midtrans.com/snap/v1/transactions/${transaction.token}/embed`,
+      success: true,
+      orderId,
+      orderStatus: newOrderStatus,
+      paymentStatus: newPaymentStatus,
     });
-  } catch (error) {
-    console.error("Payment creation error:", error);
-    return c.json({ error: "Internal server error" }, 500);
+  } catch (err) {
+    console.error("Webhook Error:", err);
+    return c.json({ error: "Webhook processing failed" }, 500);
   }
 });
 
@@ -450,78 +447,49 @@ orderRoute.patch("/:orderId/payment-success", async (c) => {
     return c.json({ error: "Internal server error" }, 500);
   }
 });
-
-// Update order status (for restaurant dashboard)
 orderRoute.patch("/:orderId/status", async (c) => {
   try {
     const authUser = await getAuthUser(c);
-    if (!authUser) {
-      return c.json({ error: "Unauthorized" }, 401);
-    }
+    if (!authUser) return c.json({ error: "Unauthorized" }, 401);
 
-    const { orderId } = c.req.param();
-    const { status } = await c.req.json();
+    const orderId = Number(c.req.param("orderId"));
+    const { status } = await c.req.json<{ status: OrderStatus }>();
 
-    // Validate status
-    const validStatuses = [
-      "pending",
-      "paid",
-      "ready",
-      "completed",
-      "cancelled",
-      "delivered",
-    ];
-    if (!validStatuses.includes(status)) {
-      return c.json({ error: "Invalid status" }, 400);
-    }
-
-    // Check if the order belongs to the authenticated business
-    const order = await db
-      .select()
-      .from(orders)
-      .where(eq(orders.id, parseInt(orderId)));
-
-    if (order.length === 0) {
-
-// Allowed status per mode
-   type OrderType = "sell" | "donation";
-    const allowedStatusesMap: Record<OrderType, OrderStatus[]> = {
-    sell: ["ready", "delivered", "completed", "cancelled"],
-    donation: ["requested", "pending", "completed", "cancelled"],
-    };
-    
-// business / Charity update order status
-orderRoute.patch("/:id/status", async (c) => {
-  try {
-    const orderId = Number(c.req.param("id"));
-    const body = await c.req.json<{ status: OrderStatus }>();
-    const { status } = body;
-
-    // Cari order dulu
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
-    if (!order) {
-      return c.json({ error: "Order not found" }, 404);
+    if (!order) return c.json({ error: "Order not found" }, 404);
+    if (order.businessId !== authUser.userId) return c.json({ error: "Forbidden" }, 403);
+
+    type OrderType = "sell" | "donation";
+    type OrderStatus =
+    | "pending"
+    | "requested"
+    | "paid"
+    | "ready"
+    | "delivered"
+    | "completed"
+    | "cancelled"
+    | "expired"
+    | "denied";
+
+    const allowedStatusesMap: Record<OrderType, OrderStatus[]> = {
+      sell: ["ready", "delivered", "completed", "cancelled"],
+      donation: ["requested", "pending", "completed", "cancelled"],
+    };
+
+    const orderType = order.type as OrderType;
+    const allowedStatuses = allowedStatusesMap[orderType] ?? [];
+
+    if (!allowedStatuses.includes(status)) {
+      return c.json({ error: `Invalid status update for mode ${orderType}` }, 400);
     }
 
-    if (order[0].businessId !== authUser.userId) {
-      return c.json({ error: "Unauthorized - Not your order" }, 403);
-    }
-
-    // Update order status
-    await db
+    const [updatedOrder] = await db
       .update(orders)
-      .set({
-        status: status,
-        updatedAt: new Date(),
-      })
-      .where(eq(orders.id, parseInt(orderId)));
+      .set({ status, updatedAt: new Date() })
+      .where(eq(orders.id, orderId))
+      .returning();
 
-    console.log(`Order ${orderId} status updated to: ${status}`);
-
-    return c.json({
-      success: true,
-      message: "Order status updated successfully",
-    });
+    return c.json({ success: true, order: updatedOrder });
   } catch (error) {
     console.error("Order status update error:", error);
     return c.json({ error: "Internal server error" }, 500);
