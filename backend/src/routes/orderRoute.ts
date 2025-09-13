@@ -88,7 +88,11 @@ orderRoute.post("/", async(c) => {
                     gross_amount: totalAmount,
                 },
                 enabled_payments: ["gopay", "shopeepay", "bank_transfer"],
+                 callbacks: {
+                    finish: "https://www.webtoons.com/id/",
+                },
             });
+
 
             return {
                 order: newOrder, 
