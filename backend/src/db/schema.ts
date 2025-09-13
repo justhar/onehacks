@@ -13,6 +13,7 @@ import {
 
 export const userTypeEnum = pgEnum("user_type", ["business", "pembeli", "charity"]);
 export const productTypeEnum = pgEnum("product_type", ["sell", "donation"]);
+export const orderTypeEnum = pgEnum("order_type", ["sell", "donation"]);
 export const orderStatusEnum = pgEnum("order_status", [
   "pending",
   "requested",
@@ -21,6 +22,8 @@ export const orderStatusEnum = pgEnum("order_status", [
   "ready",
   "completed",
   "cancelled",
+  "expired",
+  "denied",
   ]);
 
   export const paymentStatusEnum = pgEnum("payment_status",[
@@ -110,6 +113,7 @@ export const orders = pgTable("orders", {
   businessId: integer("business_id")
   .references(()=>users.id)
   .notNull(),
+  type: orderTypeEnum("order_type").notNull(),  
   totalAmount: numeric("total_amount", {precision: 10, scale: 2}).notNull(),
   status: orderStatusEnum("status").default("pending"),
   deliveryMethod: deliveryMethodEnum("delivery_method").notNull(),
@@ -133,10 +137,12 @@ export const orderItems =  pgTable("order_items", {
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
   orderId: integer("order_id")
-  .references(()=> orders.id)
-  .notNull(),
+    .references(() => orders.id)
+    .notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(), // jumlah bayar
   status: paymentStatusEnum("status").default("pending"),
-  paymentMethod: paymentMethodEnum("payment_method"),
-  transactionId: varchar("transaction_id", {length: 255}),
+  paymentMethod: paymentMethodEnum("payment_method").notNull(),
+  transactionId: varchar("transaction_id", { length: 255 }).unique(), // unik biar ga double
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });

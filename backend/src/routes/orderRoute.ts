@@ -9,7 +9,7 @@ const orderRoute = new Hono();
 
 orderRoute.post("/", async(c) => {
     const body = await c.req.json();
-    const { buyerId, sellerId, items, paymentMethod, deliveryMethod, deliveryAddress } = body;
+    const { buyerId, businessId, items, paymentMethod, deliveryMethod, deliveryAddress } = body;
 
     if (!items || items.length === 0)
         return c.json({error:"Choose minimum 1 product!"}, 400);
@@ -50,8 +50,9 @@ orderRoute.post("/", async(c) => {
             .insert(orders)
             .values({
                 buyerId,
-                sellerId,
+                businessId,
                 totalAmount: String(totalAmount),
+                type: "sell",
                 status:"pending",
                 deliveryMethod,
                 deliveryAddress: deliveryMethod === "delivery" ? JSON.stringify(deliveryAddress) : null as string | null,
@@ -73,9 +74,11 @@ orderRoute.post("/", async(c) => {
             .insert(payments)
             .values({
                 orderId: newOrder.id,
-                status: "pending",
+                amount: String(totalAmount),
+                status: "pending" as PaymentStatus,
                 paymentMethod: paymentMethod ?? null,
                 createdAt: new Date(),
+                updatedAt: new Date(),
             })
             .returning();
 
@@ -99,8 +102,9 @@ orderRoute.post("/", async(c) => {
                 .insert(orders)
                 .values({
                 buyerId,
-                sellerId,
+                businessId,
                 totalAmount: String(totalAmount),
+                type:"donation",
                 status:"requested",
                 deliveryMethod,
                 deliveryAddress: deliveryMethod === "delivery" ? JSON.stringify(deliveryAddress) : null as string | null,
@@ -128,6 +132,121 @@ orderRoute.post("/", async(c) => {
         } catch (err: any) {
             return c.json({error: err.message}, 400);
         }
+    });
+// Midtrans Notification (Webhook)
+type OrderStatus =
+  | "pending"
+  | "requested"
+  | "paid"
+  | "delivered"
+  | "ready"
+  | "completed"
+  | "cancelled"
+  | "expired"
+  | "denied";
+
+  type PaymentStatus =
+  | "pending"
+  | "success"
+  | "failed";
+
+
+orderRoute.post("/notification", async (c) => {
+  try {
+    const body = await c.req.json();
+
+    const orderId = body.order_id?.replace("order-", "");
+    const transactionStatus = body.transaction_status;
+
+    const paymentStatusMap: Record<string, PaymentStatus> = {
+    success: "success",
+    pending: "pending",
+    failed: "failed",
+    };
+
+const newPaymentStatus: PaymentStatus =
+  paymentStatusMap[transactionStatus] ?? "pending";
+
+    const statusMap: Record<string, OrderStatus> = {
+      settlement: "paid",
+      capture: "paid",
+      expire: "expired",
+      cancel: "cancelled",
+      deny: "denied",
+    };
+
+    const newStatus: OrderStatus = statusMap[transactionStatus] ?? "pending";
+
+    if (!statusMap[transactionStatus]) {
+      console.warn("⚠️ Unhandled Midtrans status:", transactionStatus);
     }
-);
+
+    if (!orderId) {
+      return c.json({ error: "Invalid order_id" }, 400);
+    }
+
+    await db
+    .update(payments)
+    .set({ status: newPaymentStatus, updatedAt: new Date() })
+    .where(eq(payments.orderId, Number(orderId)))
+    .returning();
+
+    await db
+      .update(orders)
+      .set({ status: newStatus, updatedAt: new Date() })
+      .where(eq(orders.id, Number(orderId)));
+
+    return c.json({ success: true, orderId, orderStatus: newStatus, paymentStatus: newPaymentStatus });
+
+  } catch (err) {
+    console.error("Midtrans Notification Error:", err);
+    return c.json({ error: "Webhook handling failed" }, 500);
+  }
+});
+
+
+// Allowed status per mode
+   type OrderType = "sell" | "donation";
+    const allowedStatusesMap: Record<OrderType, OrderStatus[]> = {
+    sell: ["ready", "delivered", "completed", "cancelled"],
+    donation: ["requested", "pending", "completed", "cancelled"],
+    };
+
+    
+// Seller / Charity update order status
+orderRoute.patch("/:id/status", async (c) => {
+  try {
+    const orderId = Number(c.req.param("id"));
+    const body = await c.req.json<{ status: OrderStatus }>();
+    const { status } = body;
+
+    // Cari order dulu
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+
+
+    const orderType = order.type as OrderType;
+
+    const allowedStatuses = allowedStatusesMap[orderType] ?? [];
+
+    if (!allowedStatuses.includes(status)) {
+      return c.json({ error: `Invalid status update for mode ${order.type}` }, 400);
+    }
+
+    // Update status
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(orders.id, orderId))
+      .returning();
+
+    return c.json({ success: true, order: updatedOrder });
+  } catch (err) {
+    console.error("Update Order Status Error:", err);
+    return c.json({ error: "Failed to update order status" }, 500);
+  }
+});
+
 export default orderRoute;
