@@ -14,6 +14,7 @@ import Order from "./pages/Order";
 import "./App.css";
 import Marketplace from "./pages/Marketplace";
 import Landing from "./pages/Landing";
+import Donate from "./pages/Donate"; 
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import Orders from "./pages/Orders";
 import { Toaster } from "./components/ui/sonner";
@@ -28,6 +29,7 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/donate" element={<Donate />} /> 
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/orders" element={<Orders />} />
             <Route
