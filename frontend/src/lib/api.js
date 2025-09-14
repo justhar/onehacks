@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://https://onehacks-8p9m.vercel.app/api';
 
 export const api = {
   register: async (userData) => {
