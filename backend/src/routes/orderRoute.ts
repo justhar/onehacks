@@ -204,7 +204,7 @@ orderRoute.post("/", async (c) => {
         },
         enabled_payments: ["gopay", "shopeepay", "bank_transfer"],
         callbacks: {
-          finish: "https://www.webtoons.com/id/",
+          finish: "https://plateful-onehacks.vercel.app/orders",
         },
       });
 
@@ -471,7 +471,7 @@ orderRoute.post("/:orderId/payment", async (c) => {
       },
       enabled_payments: ["gopay", "shopeepay", "bank_transfer"],
       callbacks: {
-        finish: "https://www.webtoons.com/id/",
+        finish: "https://plateful-onehacks.vercel.app/orders",
       },
     });
 
