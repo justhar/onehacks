@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/button";

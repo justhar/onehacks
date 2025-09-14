@@ -1,4 +1,4 @@
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { MarketplaceHeader } from "@/components/MarketplaceHeader";
 import { MarketplaceFilters } from "@/components/MarketplaceFilters";
 import { FoodItemCard } from "@/components/FoodItemCard";

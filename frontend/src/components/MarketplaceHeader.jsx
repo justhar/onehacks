@@ -183,9 +183,15 @@ export function MarketplaceHeader({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Food Marketplace</h1>
+        <h1 className="text-3xl font-bold text-foreground">
+          {window.location.pathname.includes("/donate")
+            ? "Food Donations"
+            : "Food Marketplace"}
+        </h1>
         <p className="text-muted-foreground">
-          Discover discounted surplus food from local restaurants
+          {window.location.pathname.includes("/donate")
+            ? "Donate surplus food to help reduce waste and feed the community"
+            : "Discover discounted surplus food from local restaurants"}
         </p>
       </div>
 

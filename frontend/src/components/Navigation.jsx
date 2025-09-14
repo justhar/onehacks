@@ -17,7 +17,6 @@ import {
   Heart,
   User,
   LogOut,
-  Settings,
   Package,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";

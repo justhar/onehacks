@@ -3,10 +3,10 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, MapPin, Star, ShoppingCart } from "lucide-react";
+import { MapPin, Star, ShoppingCart } from "lucide-react";
 import { Link } from "react-router";
 
-export function FoodItemCard({ item, onAddToCart }) {
+export function FoodItemCard({ item }) {
   const discountPercentage = Math.round(
     ((item.originalPrice - item.discountedPrice) / item.originalPrice) * 100
   );

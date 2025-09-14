@@ -1,32 +1,16 @@
-import React from "react";
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DonationCard } from "@/components/DonationCard";
 import { CharityFilters } from "@/components/CharityFilters";
-import { DonationForm } from "@/components/DonationForm";
 import { MarketplaceHeader } from "@/components/MarketplaceHeader";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Search,
   SlidersHorizontal,
   Heart,
-  Users,
-  Package,
-  Loader2,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { transformProductsData } from "@/lib/dataTransforms";
 import { toast } from "sonner";
 
 // Transform donation data from API format to DonationCard format
