@@ -25,7 +25,7 @@ productRoute.post("/", async (c) => {
     }
 
     const discount = body.discount || 0;
-    const finalPrice = body.price - (body.price * discount) / 100;
+    const finalPrice = Math.round(body.price - (body.price * discount) / 100);
     const productValues = {
       businessId: Number(authUser.userId),
       title: body.title,
@@ -57,7 +57,7 @@ productRoute.post("/", async (c) => {
 
 productRoute.get("/", async (c) => {
   const type = c.req.query("type"); // Get type query parameter
-  
+
   const baseQuery = db
     .select({
       id: products.id,
@@ -94,7 +94,8 @@ productRoute.get("/", async (c) => {
   }
 
   return c.json(result);
-});productRoute.get("/business/:id", async (c) => {
+});
+productRoute.get("/business/:id", async (c) => {
   try {
     const id = c.req.param("id");
     const type = c.req.query("type"); // Get type query parameter
@@ -147,12 +148,17 @@ productRoute.get("/", async (c) => {
 productRoute.get("/product-nearby", async (c) => {
   const userLat = Number(c.req.query("lat"));
   const userLng = Number(c.req.query("lng"));
+  const radiusMeters = Number(c.req.query("radius") ?? 5000); // Default 5km radius
+  const type = c.req.query("type");
 
   if (isNaN(userLat) || isNaN(userLng)) {
     return c.json({ error: "Latitude and Longitude are required" }, 400);
   }
+  if (isNaN(radiusMeters) || radiusMeters <= 0) {
+    return c.json({ error: "Invalid radius (must be in meters)" }, 400);
+  }
 
-  const allProducts = await db
+  let baseQuery = db
     .select({
       id: products.id,
       businessId: products.businessId,
@@ -162,6 +168,7 @@ productRoute.get("/product-nearby", async (c) => {
       imageUrl: products.imageUrl,
       latitude: products.latitude,
       longitude: products.longitude,
+      type: products.type,
       price: products.price,
       discount: products.discount,
       finalPrice: products.finalPrice,
@@ -178,8 +185,15 @@ productRoute.get("/product-nearby", async (c) => {
       eq(products.businessId, businessProfiles.userId)
     );
 
+  const query =
+    type && (type === "sell" || type === "donation")
+      ? baseQuery.where(eq(products.type, type))
+      : baseQuery;
+
+  const allProducts = await query;
+
   const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const R = 6371; //radius bumi
+  const R = 6_371_000; // Earth's radius in meters
 
   const withDistance = allProducts.map((p) => {
     if (!p.latitude || !p.longitude) return { ...p, distance: null };
@@ -204,9 +218,8 @@ productRoute.get("/product-nearby", async (c) => {
   withDistance.sort(
     (a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity)
   );
-  const radius = 1000;
   const nearbyProducts = withDistance.filter(
-    (p) => p.distance !== null && p.distance <= radius
+    (p) => p.distance! <= radiusMeters
   );
   return c.json(nearbyProducts);
 });

@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import ImageUpload from "@/components/ImageUpload";
 import { DollarSign, Package, Percent, Save, X, ArrowLeft } from "lucide-react";
 
 const FOOD_CATEGORIES = [
@@ -260,18 +261,11 @@ export default function EditProduct() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">Image URL</Label>
-                <Input
-                  id="imageUrl"
-                  name="imageUrl"
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/image.jpg"
+                <ImageUpload
+                  currentImageUrl={formData.imageUrl}
+                  onImageChange={(imageUrl) => setFormData({...formData, imageUrl})}
+                  folder="products"
                 />
-                <p className="text-sm text-muted-foreground">
-                  Enter a URL to an image of your product
-                </p>
               </div>
             </CardContent>
           </Card>

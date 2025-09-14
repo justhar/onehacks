@@ -93,9 +93,11 @@ const BusinessOnboarding = () => {
   const { user, token } = useAuth();
   const searchTimeout = useRef(null);
 
-  if (user.isOnboardingCompleted) {
-    navigate("/dashboard");
-  }
+  useEffect(() => {
+    if (user?.isOnboardingCompleted) {
+      navigate("/dashboard"); // langsung ke dashboard kalau sudah onboarding
+    }
+  }, [user, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -204,7 +206,8 @@ const BusinessOnboarding = () => {
       if (result.error) {
         setError(result.error);
       } else {
-        navigate("/dashboard");
+        navigate("/dashboard"); // langsung ke dashboard
+        return; // stop eksekusi lain biar gak reset step
       }
     } catch (err) {
       setError("Network error occurred");

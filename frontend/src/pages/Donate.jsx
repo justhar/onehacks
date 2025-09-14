@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 
 import { useState, useEffect } from "react";
@@ -7,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/navigation";
 import { DonationCard } from "@/components/DonationCard";
 import { CharityFilters } from "@/components/CharityFilters";
+import { DonationForm } from "@/components/DonationForm";
+import { MarketplaceHeader } from "@/components/MarketplaceHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,9 +18,17 @@ import {
 } from "@/components/ui/select";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Search, SlidersHorizontal, Heart, Users, Package, Loader2 } from "lucide-react";
+import {
+  Search,
+  SlidersHorizontal,
+  Heart,
+  Users,
+  Package,
+  Loader2,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { transformProductsData } from "@/lib/dataTransforms";
+import { toast } from "sonner";
 
 // Transform donation data from API format to DonationCard format
 const transformDonationData = (apiDonation) => {
@@ -31,15 +39,22 @@ const transformDonationData = (apiDonation) => {
     category: apiDonation.category || "Other",
     quantity: apiDonation.quantity || 1,
     unit: "portions", // Default unit, could be enhanced based on category
-    restaurant: apiDonation.restaurant || apiDonation.businessName || "Unknown Restaurant",
-    expiryDate: apiDonation.expiryDate ? new Date(apiDonation.expiryDate).toLocaleDateString() : "N/A",
-    pickupTime: "Contact restaurant", // Default message, could be enhanced
+    restaurant:
+      apiDonation.businessName || apiDonation.restaurant || "Unknown Business",
+    expiryDate: apiDonation.expiryDate
+      ? new Date(apiDonation.expiryDate).toLocaleDateString()
+      : "N/A",
+    pickupTime: "Contact business", // Default message, could be enhanced
     deliveryOffered: false, // Default to false, could be enhanced
     deliveryCost: 0,
-    distance: apiDonation.distance || "N/A",
+    distance: apiDonation.distance
+      ? `${(apiDonation.distance / 1000).toFixed(1)} km`
+      : "N/A",
     dietaryInfo: [], // Could be enhanced based on description or tags
     image: apiDonation.image || apiDonation.imageUrl || "/placeholder.svg",
-    createdAt: apiDonation.createdAt ? new Date(apiDonation.createdAt).toLocaleDateString() : "Recently",
+    createdAt: apiDonation.createdAt
+      ? new Date(apiDonation.createdAt).toLocaleDateString()
+      : "Recently",
   };
 };
 
@@ -51,34 +66,107 @@ export default function Donate() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [userLocation, setUserLocation] = useState(null);
+  const [manualLocation, setManualLocation] = useState(null);
 
-  // Fetch donations on component mount
-  useEffect(() => {
-    const fetchDonations = async () => {
+  // Function to fetch donations with a specific location
+  const fetchDonationsWithLocation = async (lat, lng) => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const response = await api.getDonationsNearby(lat, lng, 1000000000000000); // 10km radius
+      const transformedDonations = response.map(transformDonationData);
+      setDonations(transformedDonations);
+      console.log("Nearby donations:", transformedDonations);
+      setFilteredDonations(transformedDonations);
+    } catch (error) {
+      console.error("Error fetching nearby donations:", error);
+      // Fallback to all donations
       try {
-        setIsLoading(true);
-        setError("");
-        
         const response = await api.getDonations();
-        
-        if (response.error) {
-          setError(response.error);
-          return;
-        }
-
-        // Transform the API data to match DonationCard expectations
         const transformedDonations = response.map(transformDonationData);
         setDonations(transformedDonations);
         setFilteredDonations(transformedDonations);
-      } catch (err) {
-        console.error("Error fetching donations:", err);
-        setError("Failed to load donations. Please try again later.");
-      } finally {
-        setIsLoading(false);
+      } catch (fallbackError) {
+        setError("Failed to load donations");
+        console.error("Error fetching fallback donations:", fallbackError);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle manual location change from MarketplaceHeader
+  const handleLocationChange = async (location) => {
+    setManualLocation(location);
+    setUserLocation({ lat: location.lat, lng: location.lng });
+    await fetchDonationsWithLocation(location.lat, location.lng);
+  };
+
+  // Fetch donations on component mount
+  useEffect(() => {
+    const initializeData = async () => {
+      if (navigator.geolocation) {
+        console.log("Geolocation is supported");
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const { latitude, longitude } = position.coords;
+            setUserLocation({ lat: latitude, lng: longitude });
+            await fetchDonationsWithLocation(latitude, longitude);
+            console.log("fetched nearby donations");
+          },
+          (error) => {
+            toast.error(
+              "Failed to get your location. Please set it manually using the location button."
+            );
+            console.log("Geolocation error:", error);
+            console.log("Error code:", error.code, "Message:", error.message);
+
+            // Still load all donations even if geolocation fails
+            const loadFallbackDonations = async () => {
+              setIsLoading(true);
+              setError("");
+              try {
+                const response = await api.getDonations();
+                const transformedDonations = response.map(
+                  transformDonationData
+                );
+                setDonations(transformedDonations);
+                setFilteredDonations(transformedDonations);
+              } catch (fetchError) {
+                setError("Failed to load donations");
+                console.error("Error fetching donations:", fetchError);
+              } finally {
+                setIsLoading(false);
+              }
+            };
+
+            loadFallbackDonations();
+          }
+        );
+      } else {
+        // No geolocation support, load all donations
+        const loadAllDonations = async () => {
+          setIsLoading(true);
+          setError("");
+          try {
+            const response = await api.getDonations();
+            const transformedDonations = response.map(transformDonationData);
+            setDonations(transformedDonations);
+            setFilteredDonations(transformedDonations);
+          } catch (fetchError) {
+            setError("Failed to load donations");
+            console.error("Error fetching donations:", fetchError);
+          } finally {
+            setIsLoading(false);
+          }
+        };
+
+        loadAllDonations();
       }
     };
 
-    fetchDonations();
+    initializeData();
   }, []);
 
   const handleSearch = (e) => {
@@ -104,8 +192,15 @@ export default function Donate() {
         case "quantity":
           return b.quantity - a.quantity;
         case "distance":
-          const aDistance = parseFloat(a.distance) || 999;
-          const bDistance = parseFloat(b.distance) || 999;
+          // Parse distance from "X.X km" format or return large number if N/A
+          const aDistance =
+            a.distance && a.distance !== "N/A"
+              ? parseFloat(a.distance.replace(" km", ""))
+              : 999;
+          const bDistance =
+            b.distance && b.distance !== "N/A"
+              ? parseFloat(b.distance.replace(" km", ""))
+              : 999;
           return aDistance - bDistance;
         default:
           return 0;
@@ -143,21 +238,36 @@ export default function Donate() {
     navigate(`/checkout/${donation.id}`);
   };
 
+  const handleSetLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          };
+          console.log("User location:", coords);
+          setUserLocation(coords);
+        },
+        (err) => {
+          console.error("Error getting location:", err);
+          alert("Unable to fetch location");
+        }
+      );
+    } else {
+      alert("Geolocation not supported");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="space-y-4 mb-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Food Donations
-            </h1>
-            <p className="text-muted-foreground">
-              Find free surplus food from local restaurants to help your
-              community
-            </p>
-          </div>
-        </div>
+        <MarketplaceHeader
+          onSearch={handleSearch}
+          onSort={handleSort}
+          onToggleFilters={() => setIsFiltersOpen(true)}
+          onLocationChange={handleLocationChange}
+        />
 
         {/* Error Alert */}
         {error && (
@@ -171,53 +281,13 @@ export default function Donate() {
         {/* Loading State */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2 text-muted-foreground">Loading donations...</span>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="ml-4 text-lg text-muted-foreground">
+              Loading donations...
+            </p>
           </div>
         ) : (
-          <>
-            {/* Search and Sort */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <form onSubmit={handleSearch} className="flex-1 flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search donations, restaurants, or food types..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Button type="submit">Search</Button>
-              </form>
-
-              <div className="flex gap-2">
-                <Select onValueChange={handleSort}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="expiry">Expiring Soon</SelectItem>
-                    <SelectItem value="quantity">Largest Quantity</SelectItem>
-                    <SelectItem value="distance">Nearest First</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant="outline"
-                  onClick={() => setIsFiltersOpen(true)}
-                  className="sm:hidden"
-                >
-                  <SlidersHorizontal className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {!isLoading && (
-          <div className="flex gap-8">
+          <div className="mt-8 flex gap-8">
             {/* Desktop Filters */}
             <aside className="hidden lg:block w-80 flex-shrink-0">
               <CharityFilters onFiltersChange={handleFiltersChange} />
@@ -264,7 +334,8 @@ export default function Donate() {
                     No donations found matching your criteria.
                   </p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Try adjusting your filters or search terms, or check back later for new donations.
+                    Try adjusting your filters or search terms, or check back
+                    later for new donations.
                   </p>
                 </div>
               )}

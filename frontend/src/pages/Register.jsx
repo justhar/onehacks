@@ -1,22 +1,35 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Alert, AlertDescription } from '../components/ui/alert';
+import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router";
+import { Button } from "../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { Alert, AlertDescription } from "../components/ui/alert";
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    email: '',
-    fullName: '',
-    password: '',
-    confirmPassword: '',
-    userType: ''
+    email: "",
+    fullName: "",
+    password: "",
+    confirmPassword: "",
+    userType: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -24,28 +37,28 @@ const Register = () => {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleUserTypeChange = (value) => {
     setFormData({
       ...formData,
-      userType: value
+      userType: value,
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     if (!formData.userType) {
-      setError('Please select user type');
+      setError("Please select user type");
       return;
     }
 
@@ -55,19 +68,19 @@ const Register = () => {
       email: formData.email,
       fullName: formData.fullName,
       password: formData.password,
-      userType: formData.userType
+      userType: formData.userType,
     });
 
     if (result.error) {
       setError(result.error);
     } else {
       // Redirect based on user type and onboarding status
-      if (formData.userType === 'business') {
-        navigate('/onboarding/business/basic');
-      } else if (formData.userType === 'charity') {
-        navigate('/onboarding/charity');
+      if (formData.userType === "business") {
+        navigate("/onboarding/business/basic");
+      } else if (formData.userType === "charity") {
+        navigate("/onboarding/charity");
       } else {
-        navigate('/dashboard');
+        navigate("/dashboard");
       }
     }
 
@@ -75,16 +88,16 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8">
       <div className="max-w-md w-full">
-        <Card className="border-0 shadow-2xl">
+        <Card className="shadow-none">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
             <CardDescription>
               Join OneHacks today and start your journey
             </CardDescription>
           </CardHeader>
-          
+
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -148,7 +161,7 @@ const Register = () => {
                   <SelectContent>
                     <SelectItem value="business">Business</SelectItem>
                     <SelectItem value="charity">Charity</SelectItem>
-                    <SelectItem value="pembeli">Pembeli (Buyer)</SelectItem>
+                    <SelectItem value="pembeli">Buyer</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -165,17 +178,17 @@ const Register = () => {
                 className="w-full"
                 size="lg"
               >
-                {isLoading ? 'Creating Account...' : 'Create Account'}
+                {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </CardContent>
           </form>
 
           <CardFooter className="justify-center">
             <p className="text-sm text-gray-600">
-              Already have an account?{' '}
+              Already have an account?{" "}
               <Button
                 variant="link"
-                onClick={() => navigate('/login')}
+                onClick={() => navigate("/login")}
                 className="p-0 h-auto font-semibold"
               >
                 Sign in here

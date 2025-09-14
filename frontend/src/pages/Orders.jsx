@@ -152,7 +152,7 @@ export default function OrdersPage() {
           <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
           <div className="flex-1">
             <h4 className="font-semibold text-foreground">
-              {order.sellerName || "Unknown Restaurant"}
+              {order.businessName || "Unknown Restaurant"}
             </h4>
             <div className="flex items-center gap-2 mt-1">
               {order.deliveryMethod === "delivery" ? (

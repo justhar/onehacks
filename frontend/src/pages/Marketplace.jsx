@@ -20,18 +20,37 @@ export default function MarketplacePage() {
 
   // Function to fetch products with a specific location
   const fetchProductsWithLocation = async (lat, lng) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const response = await api.getProductsNearby(lat, lng, 10000);
-      const transformedProducts = transformProductsData(response);
+      const response = await api.getProductsNearby(lat, lng, 1000000000000000); // 10km radius
+      const responseProduct = response.filter(
+        (item) => item.type !== "donation"
+      );
+      const transformedProducts = transformProductsData(responseProduct);
       setAllItems(transformedProducts);
+      console.log(response);
+      console.log("transformed", transformedProducts);
       setFilteredItems(transformedProducts);
     } catch (error) {
       console.error("Error fetching nearby products:", error);
       // Fallback to all products
-      const response = await api.getProducts();
-      const transformedProducts = transformProductsData(response);
-      setAllItems(transformedProducts);
-      setFilteredItems(transformedProducts);
+      try {
+        const response = await api.getProducts();
+        const responseProduct = response.filter(
+          (item) => item.type !== "donation"
+        );
+        const transformedProducts = transformProductsData(responseProduct);
+        console.log(response);
+        console.log("transformed", transformedProducts);
+        setAllItems(transformedProducts);
+        setFilteredItems(transformedProducts);
+      } catch (fallbackError) {
+        setError("Failed to load products");
+        console.error("Error fetching fallback products:", fallbackError);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -146,7 +165,6 @@ export default function MarketplacePage() {
     // };
 
     // fetchProducts();
-    setIsLoading(false);
     if (navigator.geolocation) {
       console.log("Geolocation is supported");
       navigator.geolocation.getCurrentPosition(
@@ -162,8 +180,53 @@ export default function MarketplacePage() {
           );
           console.log("Geolocation error:", error);
           console.log("Error code:", error.code, "Message:", error.message);
+
+          // Still load all products even if geolocation fails
+          const loadFallbackProducts = async () => {
+            setIsLoading(true);
+            setError(null);
+            try {
+              const response = await api.getProducts();
+              const responseProduct = response.filter(
+                (item) => item.type !== "donation"
+              );
+              const transformedProducts =
+                transformProductsData(responseProduct);
+              setAllItems(transformedProducts);
+              setFilteredItems(transformedProducts);
+            } catch (fetchError) {
+              setError("Failed to load products");
+              console.error("Error fetching products:", fetchError);
+            } finally {
+              setIsLoading(false);
+            }
+          };
+
+          loadFallbackProducts();
         }
       );
+    } else {
+      // No geolocation support, load all products
+      const loadAllProducts = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const response = await api.getProducts();
+          const responseProduct = response.filter(
+            (item) => item.type !== "donation"
+          );
+          const transformedProducts = transformProductsData(response);
+          setAllItems(transformedProducts);
+          setFilteredItems(transformedProducts);
+        } catch (fetchError) {
+          setError("Failed to load products");
+          console.error("Error fetching products:", fetchError);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      loadAllProducts();
     }
   }, []);
 

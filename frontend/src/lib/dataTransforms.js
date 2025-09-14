@@ -4,8 +4,8 @@ export const transformProductData = (backendProduct) => {
   
   // Calculate discount percentage
   const discountPercentage = backendProduct.discount || 0;
-  const originalPrice = parseFloat(backendProduct.price) || 0;
-  const discountedPrice = parseFloat(backendProduct.finalPrice) || originalPrice;
+  const originalPrice = parseInt(backendProduct.price) || 0;
+  const discountedPrice = parseInt(backendProduct.finalPrice) || originalPrice;
   
   // Format expiry date
   const formatExpiryDate = (expiryDate) => {
@@ -27,10 +27,11 @@ export const transformProductData = (backendProduct) => {
   // Calculate distance string
   const formatDistance = (distance) => {
     if (distance === null || distance === undefined) return 'Unknown distance';
-    if (distance < 1) {
-      return `${(distance * 1000).toFixed(0)}m`;
+    const distanceInMeters = parseInt(distance) || 0;
+    if (distanceInMeters >= 1000) {
+      return `${(distanceInMeters / 1000).toFixed(1)} km`;
     }
-    return `${distance.toFixed(1)} km`;
+    return `${distanceInMeters}m`;
   };
 
   return {
@@ -43,7 +44,7 @@ export const transformProductData = (backendProduct) => {
     category: backendProduct.category || 'Uncategorized',
     expiresAt: formatExpiryDate(backendProduct.expiryDate),
     distance: formatDistance(backendProduct.distance),
-    rating: parseFloat(backendProduct.rating) || 0,
+    rating: parseInt(backendProduct.rating) || 0,
     image: backendProduct.imageUrl || "/placeholder.svg",
     quantity: backendProduct.quantity || 0,
     businessId: backendProduct.businessId,
@@ -68,7 +69,7 @@ export const transformOrderData = (backendOrder) => {
     id: backendOrder.id,
     orderId: `#${backendOrder.id.toString().padStart(4, '0')}`,
     status: backendOrder.status,
-    totalAmount: parseFloat(backendOrder.totalAmount) || 0,
+    totalAmount: parseInt(backendOrder.totalAmount) || 0,
     deliveryMethod: backendOrder.deliveryMethod,
     deliveryAddress: backendOrder.deliveryAddress ? JSON.parse(backendOrder.deliveryAddress) : null,
     createdAt: backendOrder.createdAt,

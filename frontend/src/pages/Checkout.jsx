@@ -31,7 +31,7 @@ export default function Checkout() {
   const { id } = useParams();
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  
+
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [deliveryOption, setDeliveryOption] = useState("pickup");
@@ -184,7 +184,7 @@ export default function Checkout() {
                         <div>
                           <div className="font-medium">Delivery</div>
                           <div className="text-sm text-muted-foreground">
-                            30-45 minutes • $2.99 fee
+                            30-45 minutes • Rp10.000 fee
                           </div>
                         </div>
                         <Truck className="h-4 w-4 text-muted-foreground" />

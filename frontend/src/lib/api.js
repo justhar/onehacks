@@ -87,7 +87,12 @@ export const api = {
     return response.json();
   },
 
-  getProductsNearby: async (lat, lng, radius = 1) => {
+  getDonationsNearby: async (lat, lng, radius = 1000000000000000) => { // Default 10km radius
+    const response = await fetch(`${API_BASE_URL}/productRoute/product-nearby?lat=${lat}&lng=${lng}&radius=${radius}&type=donation`);
+    return response.json();
+  },
+
+  getProductsNearby: async (lat, lng, radius = 1000000000000000) => { // Default 10km radius
     const response = await fetch(`${API_BASE_URL}/productRoute/product-nearby?lat=${lat}&lng=${lng}&radius=${radius}`);
     return response.json();
   },

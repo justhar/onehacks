@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button"
-import { ShoppingCart, ArrowRight, Users, Utensils, Heart } from "lucide-react"
-import { Link } from "react-router-dom" 
+import { Button } from "@/components/ui/button";
+import { ShoppingCart, ArrowRight, Users, Utensils, Heart } from "lucide-react";
+import { Link } from "react-router";
 
 export default function HeroSection() {
   return (
@@ -18,94 +18,114 @@ export default function HeroSection() {
               food. Save money, help the environment, and make a difference in
               your community.
             </p>
-            </div>
-            </div>
           </div>
-             
-             {/* Feature box */}
-             <section className="flex items-center justify-center"> 
-          <div className="max-w-5xl w-full bg-white rounded-2xl shadow-xl overflow-hidden"> 
-  <div className="grid grid-cols-1 md:grid-cols-3">
+        </div>
+      </div>
 
-    {/* Marketplace */}
-    <Link to="/marketplace">
-    <div className="flex items-start gap-4 p-8 border-b md:border-b-0 md:border-r hover:bg-emerald-50 transition cursor-pointer">
-      <div className="bg-black p-3 rounded-lg">
-        <ShoppingCart className="h-10 w-10 text-white" />
-      </div>
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800">Grab a Meal</h3>
-        <p className="text-sm text-gray-600">
-          Discover surplus meals from local restaurants at affordable prices. Save money while reducing food waste.
-        </p>
-      </div>
-    </div>
-    </Link>
+      {/* Feature box */}
+      <section className="flex items-center justify-center">
+        <div className="max-w-5xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-3">
+            {/* Marketplace */}
+            <Link to="/marketplace">
+              <div className="flex items-start gap-4 p-8 border-b md:border-b-0 md:border-r hover:bg-emerald-50 transition cursor-pointer">
+                <div className="bg-[oklch(38.757%_0.12168_145.075)] p-3 rounded-lg">
+                  <ShoppingCart className="h-10 w-10 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Grab a Meal
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Discover surplus meals from local restaurants at affordable
+                    prices. Save money while reducing food waste.
+                  </p>
+                </div>
+              </div>
+            </Link>
 
-    {/* Donate */}
-    <div className="flex items-start gap-4 p-8 border-b md:border-b-0 md:border-r hover:bg-emerald-50 transition cursor-pointer">
-      <div className="bg-black p-3 rounded-lg">
-        <Heart className="h-8 w-8 text-white" /> 
-      </div>
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800">Share Your Food</h3>
-        <p className="text-sm text-gray-600">
-          Share your excess food with communities in need. Every donation helps fight hunger and support charities.
-        </p>
-      </div>
-    </div>
+            {/* Donate */}
+            <Link to="/donate">
+              <div className="flex items-start gap-4 p-8 border-b md:border-b-0 md:border-r hover:bg-emerald-50 transition cursor-pointer">
+                <div className="bg-[oklch(38.757%_0.12168_145.075)] p-3 rounded-lg">
+                  <Heart className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Share Your Food
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Share your excess food with communities in need. Every
+                    donation helps fight hunger and support charities.
+                  </p>
+                </div>
+              </div>
+            </Link>
 
-    {/* For Restaurants */}
-    <div className="flex items-start gap-4 p-8 hover:bg-emerald-50 transition cursor-pointer">
-      <div className="bg-black p-3 rounded-lg">
-        <Users className="h-8 w-8 text-white" />
-      </div>
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800">Work With Us</h3>
-        <p className="text-sm text-gray-600">
-          Partner with us to minimize food waste, reach more customers, and make a positive impact in your community.
-        </p>
-      </div>
-    </div> 
-            </div>
+            {/* For Restaurants */}
+            <Link to="/dashboard">
+              <div className="flex items-start gap-4 p-8 hover:bg-emerald-50 transition cursor-pointer">
+                <div className="bg-[oklch(38.757%_0.12168_145.075)] p-3 rounded-lg">
+                  <Users className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Work With Us
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Partner with us to minimize food waste, reach more
+                    customers, and make a positive impact in your community.
+                  </p>
+                </div>
+              </div>
+            </Link>
           </div>
-          </section> 
+        </div>
+      </section>
 
-           {/* Marquee */}
-      <div className="absolute bottom-0 left-0 w-full bg-gray-900 text-white font-semibold py-3 overflow-hidden">
+      {/* Marquee */}
+      <div className="absolute bottom-0 left-0 w-full bg-[oklch(38.757%_0.12168_145.075)] text-white font-semibold py-3 overflow-hidden">
         <div className="animate-marquee whitespace-nowrap">
           <span className="mx-8">
-            food waste is everyone's problem, but saving food can be everyone's solution
+            food waste is everyone's problem, but saving food can be everyone's
+            solution
           </span>
           <span className="mx-8">
-            food waste is everyone's problem, but saving food can be everyone's solution
+            food waste is everyone's problem, but saving food can be everyone's
+            solution
           </span>
           <span className="mx-8">
-            food waste is everyone's problem, but saving food can be everyone's solution
+            food waste is everyone's problem, but saving food can be everyone's
+            solution
           </span>
           <span className="mx-8">
-            food waste is everyone's problem, but saving food can be everyone's solution
+            food waste is everyone's problem, but saving food can be everyone's
+            solution
           </span>
         </div>
       </div>
 
-       {/* Marquee */}
-      <div className="absolute bottom-0 left-0 w-full bg-gray-900 text-white font-semibold py-3 overflow-hidden">
+      {/* Marquee */}
+      <div className="absolute bottom-0 left-0 w-full bg-[oklch(38.757%_0.12168_145.075)] text-white font-semibold py-3 overflow-hidden">
         <div className="animate-marquee whitespace-nowrap">
           <span className="mx-8">
-            food waste is everyone's problem, but saving food can be everyone's solution
+            food waste is everyone's problem, but saving food can be everyone's
+            solution
           </span>
           <span className="mx-8">
-            food waste is everyone's problem, but saving food can be everyone's solution
+            food waste is everyone's problem, but saving food can be everyone's
+            solution
           </span>
           <span className="mx-8">
-            food waste is everyone's problem, but saving food can be everyone's solution
+            food waste is everyone's problem, but saving food can be everyone's
+            solution
           </span>
           <span className="mx-8">
-            food waste is everyone's problem, but saving food can be everyone's solution
+            food waste is everyone's problem, but saving food can be everyone's
+            solution
           </span>
         </div>
       </div>
-    </section> 
-  )
+    </section>
+  );
 }

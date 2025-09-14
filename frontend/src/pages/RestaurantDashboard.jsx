@@ -235,8 +235,13 @@ export default function RestaurantDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {donations.length === 0 ? (
                 <div className="col-span-full text-center py-8">
-                  <p className="text-muted-foreground">No donation items added yet</p>
-                  <Button className="mt-4" onClick={() => navigate("/donation/add")}>
+                  <p className="text-muted-foreground">
+                    No donation items added yet
+                  </p>
+                  <Button
+                    className="mt-4"
+                    onClick={() => navigate("/donation/add")}
+                  >
                     Add Your First Donation
                   </Button>
                 </div>

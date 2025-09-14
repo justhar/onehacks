@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import ImageUpload from "@/components/ImageUpload";
 import {
   DollarSign,
   Package,
@@ -55,7 +56,18 @@ export default function AddProduct() {
     discount: "0",
     quantity: "",
     imageUrl: "",
+    productType: "",
   });
+
+  // Function to convert product type to human-readable title
+  const getProductTitle = (productType) => {
+    const titleMap = {
+      "single-product": "Single Product",
+      "mystery-bundle": "Mystery Bundle", 
+      "treasure-hamper": "Treasure Hamper"
+    };
+    return titleMap[productType] || productType;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -72,10 +84,17 @@ export default function AddProduct() {
     }));
   };
 
+  const handleImageChange = (imageUrl) => {
+    setFormData((prev) => ({
+      ...prev,
+      imageUrl: imageUrl,
+    }));
+  };
+
   const calculateFinalPrice = () => {
-    const price = parseFloat(formData.price) || 0;
+    const price = parseInt(formData.price) || 0;
     const discount = parseFloat(formData.discount) || 0;
-    return (price - (price * discount) / 100).toFixed(2);
+    return Math.round(price - (price * discount) / 100);
   };
 
   const handleSubmit = async (e) => {
@@ -84,9 +103,9 @@ export default function AddProduct() {
     setSuccess("");
     setIsLoading(true);
 
-    // Validation
-    if (!formData.title.trim()) {
-      setError("Product title is required");
+    // Validatio
+    if (!formData.productType) {
+      setError("Please select a product type");
       setIsLoading(false);
       return;
     }
@@ -95,7 +114,7 @@ export default function AddProduct() {
       setIsLoading(false);
       return;
     }
-    if (!formData.price || parseFloat(formData.price) <= 0) {
+    if (!formData.price || parseInt(formData.price) <= 0) {
       setError("Please enter a valid price");
       setIsLoading(false);
       return;
@@ -108,13 +127,14 @@ export default function AddProduct() {
 
     try {
       const productData = {
-        title: formData.title,
+        title: getProductTitle(formData.productType),
         description: formData.description,
         category: formData.category,
-        price: parseFloat(formData.price),
+        price: parseInt(formData.price),
         discount: parseFloat(formData.discount) || 0,
         quantity: parseInt(formData.quantity),
         imageUrl: formData.imageUrl || null,
+        type: "sell", // Default to sell type
       };
 
       const response = await api.createProduct(token, productData);
@@ -132,6 +152,7 @@ export default function AddProduct() {
           discount: "0",
           quantity: "",
           imageUrl: "",
+          productType: "",
         });
 
         // Redirect to dashboard after 2 seconds
@@ -179,6 +200,69 @@ export default function AddProduct() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Product Type Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Product Type
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="productType">Type of Product *</Label>
+                  <div className="group relative">
+                    <button
+                      type="button"
+                      className="w-4 h-4 rounded-full border border-muted-foreground text-xs flex items-center justify-center hover:bg-muted"
+                    >
+                      ?
+                    </button>
+                    <div className="absolute left-6 top-0 bg-popover border rounded-md p-3 shadow-lg z-10 w-80 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="font-semibold">Single Product:</span>{" "}
+                          Individual food items sold separately
+                        </div>
+                        <div>
+                          <span className="font-semibold">Mystery Bundle:</span>{" "}
+                          Surprise selection of various food items at a
+                          discounted price
+                        </div>
+                        <div>
+                          <span className="font-semibold">
+                            Treasure Hamper:
+                          </span>{" "}
+                          Curated collection of premium food items in an
+                          attractive package
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <Select
+                  value={formData.productType || ""}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, productType: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select product type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mystery-bundle">
+                      Mystery Bundle
+                    </SelectItem>
+                    <SelectItem value="treasure-hamper">
+                      Treasure Hamper
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -188,19 +272,7 @@ export default function AddProduct() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Product Name *</Label>
-                  <Input
-                    id="title"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Fresh Pasta Primavera"
-                    required
-                  />
-                </div>
-
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
                   <Select
@@ -233,20 +305,12 @@ export default function AddProduct() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="imageUrl">Image URL</Label>
-                <Input
-                  id="imageUrl"
-                  name="imageUrl"
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/image.jpg"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Enter a URL to an image of your product
-                </p>
-              </div>
+              <ImageUpload
+                currentImageUrl={formData.imageUrl}
+                onImageChange={handleImageChange}
+                disabled={isLoading}
+                folder="products"
+              />
             </CardContent>
           </Card>
 
@@ -261,16 +325,15 @@ export default function AddProduct() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Original Price * ($)</Label>
+                  <Label htmlFor="price">Original Price * (Rp)</Label>
                   <Input
                     id="price"
                     name="price"
                     type="number"
-                    step="0.01"
                     min="0"
                     value={formData.price}
                     onChange={handleInputChange}
-                    placeholder="0.00"
+                    placeholder="0"
                     required
                   />
                 </div>
@@ -314,12 +377,12 @@ export default function AddProduct() {
                   </p>
                   <div className="flex items-center space-x-2 mt-1">
                     <span className="text-lg font-bold text-primary">
-                      ${calculateFinalPrice()}
+                      Rp{calculateFinalPrice()}
                     </span>
                     {formData.discount > 0 && (
                       <>
                         <span className="text-sm text-muted-foreground line-through">
-                          ${formData.price}
+                          Rp{formData.price}
                         </span>
                         <Badge variant="secondary">
                           {formData.discount}% OFF

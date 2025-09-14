@@ -47,21 +47,28 @@ export default function Navigation() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <Leaf className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold text-foreground">FoodSaver</span>
+          <span className="text-xl font-bold text-foreground">Plateful</span>
         </Link>
-
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              to={item.href}
-              className="flex items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-            >
-              <item.icon className="h-4 w-4" />
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          {navItems
+            .filter((item) => {
+              if (item.href === "/dashboard" && user?.userType !== "business")
+                return false;
+              if (item.href === "/donate" && user?.userType !== "charity")
+                return false;
+              if (item.href === "/orders" && !user) return false;
+              return true;
+            })
+            .map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                className="flex items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              >
+                <item.icon className="h-4 w-4" />
+                <span>{item.label}</span>
+              </Link>
+            ))}
         </nav>
 
         {/* Desktop Actions */}
@@ -91,19 +98,7 @@ export default function Navigation() {
                     </p>
                   </div>
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/profile">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -114,10 +109,10 @@ export default function Navigation() {
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/Home">Sign In</Link>
+                <Link to="/login">Sign In</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link to="/Home">Get Started</Link>
+                <Link to="/register">Get Started</Link>
               </Button>
             </>
           )}

@@ -22,9 +22,9 @@ auth.post("/register", async (c) => {
     }
 
     // Validate userType
-    if (!["business", "pembeli"].includes(userType)) {
+    if (!["business", "pembeli", "charity"].includes(userType)) {
       return c.json(
-        { error: 'User type must be either "business" or "pembeli"' },
+        { error: 'User type must be either "business", "buyer", or "charity' },
         400
       );
     }

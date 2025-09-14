@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import ImageUpload from "@/components/ImageUpload";
 import {
   Heart,
   Package,
@@ -218,18 +219,11 @@ export default function AddDonation() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">Image URL</Label>
-                <Input
-                  id="imageUrl"
-                  name="imageUrl"
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/image.jpg"
+                <ImageUpload
+                  currentImageUrl={formData.imageUrl}
+                  onImageChange={(imageUrl) => setFormData({...formData, imageUrl})}
+                  folder="donations"
                 />
-                <p className="text-sm text-muted-foreground">
-                  Enter a URL to an image of your donation item
-                </p>
               </div>
             </CardContent>
           </Card>

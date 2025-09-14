@@ -19,9 +19,11 @@ export function FoodItemCard({ item, onAddToCart }) {
           alt={item.name}
           className="w-full h-48 object-cover"
         />
-        <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground">
-          {discountPercentage}% OFF
-        </Badge>
+        {discountPercentage > 0 && (
+          <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground">
+            {discountPercentage}% OFF
+          </Badge>
+        )}
         <Badge variant="secondary" className="absolute top-2 left-2">
           {item.category}
         </Badge>
@@ -50,19 +52,16 @@ export function FoodItemCard({ item, onAddToCart }) {
             <span>{item.distance}</span>
           </div>
 
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>Expires {item.expiresAt}</span>
-          </div>
-
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="text-lg font-bold text-primary">
-                ${item.discountedPrice}
+                Rp{item.discountedPrice}
               </span>
-              <span className="text-sm text-muted-foreground line-through">
-                ${item.originalPrice}
-              </span>
+              {discountPercentage > 0 && (
+                <span className="text-sm text-muted-foreground line-through">
+                  Rp{item.originalPrice}
+                </span>
+              )}
             </div>
             <span className="text-sm text-muted-foreground">
               {item.quantity} available
@@ -72,11 +71,22 @@ export function FoodItemCard({ item, onAddToCart }) {
       </CardContent>
 
       <CardFooter className="p-4 pt-0">
-        <Button className="w-full" disabled={item.quantity === 0} asChild>
-          <Link to={`/checkout/${item.id}`}>
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            {item.quantity === 0 ? "Sold Out" : "Order Now"}
-          </Link>
+        <Button
+          className="w-full"
+          disabled={item.quantity === 0}
+          asChild={item.quantity > 0}
+        >
+          {item.quantity === 0 ? (
+            <>
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Sold Out
+            </>
+          ) : (
+            <Link to={`/checkout/${item.id}`}>
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Order Now
+            </Link>
+          )}
         </Button>
       </CardFooter>
     </Card>

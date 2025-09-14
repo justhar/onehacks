@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, Star, Edit, Trash2, Heart } from "lucide-react";
 
-export function DashboardFoodItemCard({ item, onEdit, onDelete, isDonation = false }) {
+export function DashboardFoodItemCard({
+  item,
+  onEdit,
+  onDelete,
+  isDonation = false,
+}) {
   const discountPercentage = item.discount ? Math.round(item.discount) : 0;
 
   console.log(item);
@@ -24,10 +29,7 @@ export function DashboardFoodItemCard({ item, onEdit, onDelete, isDonation = fal
           </Badge>
         )}
         {isDonation && (
-          <Badge className="absolute top-2 right-2 bg-red-500 text-white">
-            <Heart className="h-3 w-3 mr-1" />
-            DONATION
-          </Badge>
+          <Badge className="absolute top-2 right-2 text-white">Donation</Badge>
         )}
         <Badge variant="secondary" className="absolute top-2 left-2">
           {item.category}
@@ -54,8 +56,7 @@ export function DashboardFoodItemCard({ item, onEdit, onDelete, isDonation = fal
             <div className="flex items-center space-x-2">
               {isDonation ? (
                 <div className="flex items-center space-x-1">
-                  <Heart className="h-4 w-4 text-red-500" />
-                  <span className="text-lg font-bold text-red-500">FREE</span>
+                  <span className="text-lg font-bold ">FREE</span>
                 </div>
               ) : discountPercentage > 0 ? (
                 <>

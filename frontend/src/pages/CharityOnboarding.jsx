@@ -77,12 +77,14 @@ const CharityOnboarding = () => {
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
   const navigate = useNavigate();
-  const { user, token } = useAuth();
+  const { user, token, updateUser } = useAuth();
   const searchTimeout = useRef(null);
 
-  if (user.isOnboardingCompleted) {
-    navigate("/donate");
-  }
+  useEffect(() => {
+    if (user?.isOnboardingCompleted) {
+      navigate("/donate");
+    }
+  }, [user, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -179,6 +181,7 @@ const CharityOnboarding = () => {
       if (result.error) {
         setError(result.error);
       } else {
+        updateUser({ ...user, isOnboardingCompleted: true });
         navigate("/donate");
       }
     } catch (error) {
@@ -315,13 +318,14 @@ const CharityOnboarding = () => {
               </div>
 
               <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={handlePrevious}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePrevious}
+                >
                   Previous
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={!validateStep(2) || isLoading}
-                >
+                <Button type="submit" disabled={!validateStep(2) || isLoading}>
                   {isLoading ? "Completing..." : "Complete Onboarding"}
                 </Button>
               </div>
@@ -349,15 +353,39 @@ const CharityOnboarding = () => {
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center space-x-4">
-            <div className={`flex items-center space-x-2 ${currentStep >= 1 ? 'text-primary' : 'text-muted-foreground'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+            <div
+              className={`flex items-center space-x-2 ${
+                currentStep >= 1 ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  currentStep >= 1
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                }`}
+              >
                 1
               </div>
               <span>Charity Info</span>
             </div>
-            <div className={`flex-1 h-px ${currentStep >= 2 ? 'bg-primary' : 'bg-muted'}`} />
-            <div className={`flex items-center space-x-2 ${currentStep >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+            <div
+              className={`flex-1 h-px ${
+                currentStep >= 2 ? "bg-primary" : "bg-muted"
+              }`}
+            />
+            <div
+              className={`flex items-center space-x-2 ${
+                currentStep >= 2 ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  currentStep >= 2
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                }`}
+              >
                 2
               </div>
               <span>Address</span>
@@ -371,9 +399,7 @@ const CharityOnboarding = () => {
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit}>
-          {renderStep()}
-        </form>
+        <form onSubmit={handleSubmit}>{renderStep()}</form>
       </div>
     </div>
   );
