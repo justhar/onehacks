@@ -2,7 +2,6 @@ import React from "react";
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Navigation from "@/components/navigation";
 import { DonationCard } from "@/components/DonationCard";
 import { CharityFilters } from "@/components/CharityFilters";
 import { DonationForm } from "@/components/DonationForm";
