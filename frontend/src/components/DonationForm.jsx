@@ -86,7 +86,7 @@ export function DonationForm() {
   };
 
   const handleSetLocation = () => {
-    console.log("Location saved:", formData.address, position);
+    // Location saved
   };
 
   const LocationMarker = ({ position, setPosition, setFormData }) => {
@@ -125,7 +125,6 @@ export function DonationForm() {
             }));
           }
         } catch (error) {
-          console.error("Reverse geocoding failed:", error);
           // Fallback: set coordinates as address
           setFormData((prev) => ({
             ...prev,
@@ -153,7 +152,6 @@ export function DonationForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Donation submitted:", formData);
     // TODO: Submit to backend
   };
 

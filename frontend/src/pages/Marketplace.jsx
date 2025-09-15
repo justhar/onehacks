@@ -29,11 +29,8 @@ export default function MarketplacePage() {
       );
       const transformedProducts = transformProductsData(responseProduct);
       setAllItems(transformedProducts);
-      console.log(response);
-      console.log("transformed", transformedProducts);
       setFilteredItems(transformedProducts);
     } catch (error) {
-      console.error("Error fetching nearby products:", error);
       // Fallback to all products
       try {
         const response = await api.getProducts();
@@ -41,13 +38,10 @@ export default function MarketplacePage() {
           (item) => item.type !== "donation"
         );
         const transformedProducts = transformProductsData(responseProduct);
-        console.log(response);
-        console.log("transformed", transformedProducts);
         setAllItems(transformedProducts);
         setFilteredItems(transformedProducts);
       } catch (fallbackError) {
         setError("Failed to load products");
-        console.error("Error fetching fallback products:", fallbackError);
       }
     } finally {
       setIsLoading(false);
@@ -172,14 +166,11 @@ export default function MarketplacePage() {
           const { latitude, longitude } = position.coords;
           setUserLocation({ lat: latitude, lng: longitude });
           await fetchProductsWithLocation(latitude, longitude);
-          console.log("fetched");
         },
         (error) => {
           toast.error(
             "Failed to get your location. Please set it manually using the location button."
           );
-          console.log("Geolocation error:", error);
-          console.log("Error code:", error.code, "Message:", error.message);
 
           // Still load all products even if geolocation fails
           const loadFallbackProducts = async () => {

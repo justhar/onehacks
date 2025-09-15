@@ -25,11 +25,7 @@ export default function Order() {
   const [error, setError] = useState(null);
 
   const handlePaymentSuccess = async (paymentResult) => {
-    console.log("Payment success callback triggered:", paymentResult);
-
     try {
-      console.log("Manually updating payment status...");
-
       // Extract transaction ID from Midtrans result
       const transactionId =
         paymentResult.transaction_id || paymentResult.order_id;
@@ -42,17 +38,14 @@ export default function Order() {
       );
 
       if (updateResult.success) {
-        console.log("Payment status updated successfully!");
         // Refresh the order data to show updated payment status
         await fetchOrder();
       } else {
-        console.error("Failed to update payment status:", updateResult.error);
         setError(
           "Payment successful but failed to update status. Please refresh the page."
         );
       }
     } catch (error) {
-      console.error("Error in handlePaymentSuccess:", error);
       setError(
         "Payment successful but failed to update status. Please refresh the page."
       );
@@ -70,9 +63,7 @@ export default function Order() {
       const response = await api.getOrders(token);
       const foundOrder = response.find((o) => o.id.toString() === params.id);
       setOrder(foundOrder);
-      console.log(foundOrder);
     } catch (error) {
-      console.error("Failed to fetch order:", error);
       setError("Failed to load order details");
     } finally {
       setIsLoading(false);
@@ -117,7 +108,13 @@ export default function Order() {
         </h1>
         <p className="text-muted-foreground">
           Order #{order.id} -{" "}
-          {order.paymentStatus === "success" ? "Paid" : "Payment Pending"}
+          {order.type === "donation"
+            ? order.paymentStatus === "success"
+              ? "Donation Completed"
+              : "Donation Request"
+            : order.paymentStatus === "success"
+            ? "Paid"
+            : "Payment Pending"}
         </p>
       </div>
 
@@ -133,7 +130,13 @@ export default function Order() {
                   order.paymentStatus === "success" ? "default" : "destructive"
                 }
               >
-                {order.paymentStatus === "success" ? "Paid" : "Unpaid"}
+                {order.type === "donation"
+                  ? order.paymentStatus === "success"
+                    ? "Donation Paid"
+                    : "Donation Pending"
+                  : order.paymentStatus === "success"
+                  ? "Paid"
+                  : "Unpaid"}
               </Badge>
             </div>
           </CardTitle>
@@ -237,25 +240,32 @@ export default function Order() {
             </div>
             <Separator />
             <div className="flex justify-between font-semibold">
-              <span className="text-foreground">Total Paid</span>
+              <span className="text-foreground">
+                {order.type === "donation" ? "Total Value" : "Total Paid"}
+              </span>
               <span className="text-primary">
-                Rp {parseFloat(order.totalAmount).toLocaleString()}
+                {order.type === "donation" &&
+                parseFloat(order.totalAmount) === 0
+                  ? "Free"
+                  : `Rp ${parseFloat(order.totalAmount).toLocaleString()}`}
               </span>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Payment Component for Unpaid Orders */}
-      {order && order.paymentStatus !== "success" && (
-        <PaymentComponent
-          order={order}
-          onPaymentSuccess={handlePaymentSuccess}
-        />
-      )}
+      {/* Payment Component for Unpaid Orders (Skip for donations) */}
+      {order &&
+        order.type !== "donation" &&
+        order.paymentStatus !== "success" && (
+          <PaymentComponent
+            order={order}
+            onPaymentSuccess={handlePaymentSuccess}
+          />
+        )}
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 mt-5">
         <Button asChild className="flex-1">
           <Link to="/marketplace">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -271,13 +281,35 @@ export default function Order() {
       <div className="mt-8 p-4 bg-muted rounded-lg">
         <h4 className="font-semibold text-foreground mb-2">What's Next?</h4>
         <ul className="text-sm text-muted-foreground space-y-1">
-          <li>• The seller will be notified of your order</li>
-          <li>• You can track your order status in the Orders page</li>
-          {order.deliveryMethod === "pickup" && (
-            <li>• You'll be contacted when your order is ready for pickup</li>
-          )}
-          {order.deliveryMethod === "delivery" && (
-            <li>• Your order will be delivered to the specified address</li>
+          {order.type === "donation" ? (
+            <>
+              <li>• Your donation request has been sent to the business</li>
+              <li>• The business will review and approve your request</li>
+              <li>
+                • You'll be notified when the donation is ready for collection
+              </li>
+              {order.deliveryMethod === "pickup" && (
+                <li>• Please wait for pickup confirmation from the business</li>
+              )}
+              {order.deliveryMethod === "delivery" && (
+                <li>
+                  • The donation will be delivered to your specified address
+                </li>
+              )}
+            </>
+          ) : (
+            <>
+              <li>• The seller will be notified of your order</li>
+              <li>• You can track your order status in the Orders page</li>
+              {order.deliveryMethod === "pickup" && (
+                <li>
+                  • You'll be contacted when your order is ready for pickup
+                </li>
+              )}
+              {order.deliveryMethod === "delivery" && (
+                <li>• Your order will be delivered to the specified address</li>
+              )}
+            </>
           )}
         </ul>
       </div>

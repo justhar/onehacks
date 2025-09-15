@@ -13,8 +13,6 @@ export function DashboardFoodItemCard({
 }) {
   const discountPercentage = item.discount ? Math.round(item.discount) : 0;
 
-  console.log(item);
-
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="relative">

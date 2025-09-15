@@ -31,6 +31,7 @@ orderRoute.get("/", async (c) => {
         businessId: orders.businessId,
         totalAmount: orders.totalAmount,
         status: orders.status,
+        type: orders.type,
         deliveryMethod: orders.deliveryMethod,
         deliveryAddress: orders.deliveryAddress,
         createdAt: orders.createdAt,
@@ -48,7 +49,6 @@ orderRoute.get("/", async (c) => {
 
     return c.json(userOrders);
   } catch (error) {
-    console.error("Get orders error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });
@@ -68,6 +68,7 @@ orderRoute.get("/business", async (c) => {
         businessId: orders.businessId,
         totalAmount: orders.totalAmount,
         status: orders.status,
+        type: orders.type,
         deliveryMethod: orders.deliveryMethod,
         deliveryAddress: orders.deliveryAddress,
         createdAt: orders.createdAt,
@@ -82,7 +83,6 @@ orderRoute.get("/business", async (c) => {
 
     return c.json(businessOrders);
   } catch (error) {
-    console.error("Get business orders error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });
@@ -181,7 +181,21 @@ orderRoute.post("/", async (c) => {
       }
 
       if (productType === "donation") {
-        return { order: newOrder };
+        // For donation orders, create a payment record with "success" status
+        const paymentValues: typeof payments.$inferInsert = {
+          orderId: newOrder.id,
+          status: "success",
+          paymentMethod: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        const [newPayment] = await tx
+          .insert(payments)
+          .values(paymentValues)
+          .returning();
+
+        return { order: newOrder, payment: newPayment };
       }
 
       const paymentValues: typeof payments.$inferInsert = {

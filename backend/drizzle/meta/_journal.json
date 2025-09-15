@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1757336088954,
-      "tag": "0000_normal_hercules",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1757386000573,
-      "tag": "0001_vengeful_blur",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1757389177676,
-      "tag": "0002_busy_outlaw_kid",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1757492119933,
-      "tag": "0003_amused_imperial_guard",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1757733736251,
-      "tag": "0004_married_wrecker",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1757780020287,
-      "tag": "0005_slimy_swarm",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1757780064946,
-      "tag": "0006_medical_beyonder",
+      "when": 1757940413968,
+      "tag": "0000_steady_newton_destine",
       "breakpoints": true
     }
   ]

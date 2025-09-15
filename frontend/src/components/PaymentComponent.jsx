@@ -17,9 +17,7 @@ export default function PaymentComponent({ order, onPaymentSuccess }) {
       setIsLoading(true);
       setError("");
 
-      console.log("Creating payment for order:", order.id);
       const response = await api.createPayment(token, order.id);
-      console.log("Payment response:", response);
 
       if (response.error) {
         setError(response.error);
@@ -31,38 +29,32 @@ export default function PaymentComponent({ order, onPaymentSuccess }) {
       // Load Midtrans Snap
       setTimeout(() => {
         if (window.snap) {
-          console.log("Loading Snap with token:", response.snapToken);
           window.snap.embed(response.snapToken, {
             embedId: "snap-container",
             onSuccess: async function (result) {
-              console.log("Payment success:", result);
               onPaymentSuccess?.(result);
             },
             onPending: function (result) {
-              console.log("Payment pending:", result);
+              // Payment pending
             },
             onError: function (result) {
-              console.log("Payment error:", result);
               setError("Payment failed. Please try again.");
             },
             onClose: function () {
-              console.log("Payment popup closed");
+              // Payment popup closed
             },
           });
         } else {
-          console.error("Snap not loaded");
           setError("Payment system not loaded. Please refresh the page.");
         }
       }, 1000);
     } catch (error) {
-      console.error("Payment creation error:", error);
       setError("Failed to create payment. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  console.log("ORDER", order);
   // Load Midtrans Snap script
   useEffect(() => {
     const script = document.createElement("script");
@@ -74,11 +66,10 @@ export default function PaymentComponent({ order, onPaymentSuccess }) {
     );
 
     script.onload = () => {
-      console.log("Midtrans Snap script loaded successfully");
+      // Midtrans Snap script loaded successfully
     };
 
     script.onerror = () => {
-      console.error("Failed to load Midtrans Snap script");
       setError("Failed to load payment system. Please refresh the page.");
     };
 

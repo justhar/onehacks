@@ -71,7 +71,6 @@ export const LocationMarker = ({ position, setPosition, setFormData }) => {
           }));
         }
       } catch (error) {
-        console.error("Reverse geocoding failed:", error);
         // Fallback: set coordinates as address
         setFormData((prev) => ({
           ...prev,
@@ -164,7 +163,6 @@ export function MarketplaceHeader({
           const data = await response.json();
           setAddressSuggestions(data || []);
         } catch (err) {
-          console.error("Error fetching address suggestions:", err);
           // Clear suggestions on error
           setAddressSuggestions([]);
         }

@@ -63,8 +63,8 @@ export default function AddProduct() {
   const getProductTitle = (productType) => {
     const titleMap = {
       "single-product": "Single Product",
-      "mystery-bundle": "Mystery Bundle", 
-      "treasure-hamper": "Treasure Hamper"
+      "mystery-bundle": "Mystery Bundle",
+      "treasure-hamper": "Treasure Hamper",
     };
     return titleMap[productType] || productType;
   };

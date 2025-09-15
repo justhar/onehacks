@@ -50,7 +50,6 @@ productRoute.post("/", async (c) => {
 
     return c.json(newProduct[0]); // Return the first inserted product
   } catch (error) {
-    console.error("Product creation error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });
@@ -140,7 +139,6 @@ productRoute.get("/business/:id", async (c) => {
 
     return c.json(result);
   } catch (error) {
-    console.error("Get products by business error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });
@@ -242,6 +240,7 @@ productRoute.get("/:id", async (c) => {
       imageUrl: products.imageUrl,
       latitude: products.latitude,
       longitude: products.longitude,
+      type: products.type,
       price: products.price,
       discount: products.discount,
       finalPrice: products.finalPrice,

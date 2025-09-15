@@ -58,7 +58,6 @@ export default function RestaurantDashboard() {
         setOrders(ordersResponse); // Orders may need different transformation
       } catch (error) {
         setError("Failed to load dashboard data");
-        console.error("Dashboard fetch error:", error);
       } finally {
         setIsLoading(false);
       }
@@ -93,7 +92,6 @@ export default function RestaurantDashboard() {
         setTimeout(() => setDeleteSuccess(""), 3000);
       }
     } catch (error) {
-      console.error("Delete product error:", error);
       setError("Failed to delete product. Please try again.");
     }
   };
@@ -117,7 +115,6 @@ export default function RestaurantDashboard() {
         setTimeout(() => setDeleteSuccess(""), 3000);
       }
     } catch (error) {
-      console.error("Update order status error:", error);
       setError("Failed to update order status. Please try again.");
     }
   };

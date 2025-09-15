@@ -17,14 +17,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import ImageUpload from "@/components/ImageUpload";
-import {
-  Heart,
-  Package,
-  Upload,
-  MapPin,
-  X,
-  ArrowLeft,
-} from "lucide-react";
+import { Heart, Package, Upload, MapPin, X, ArrowLeft } from "lucide-react";
 
 const FOOD_CATEGORIES = [
   "Main Dishes",
@@ -141,7 +134,8 @@ export default function AddDonation() {
             Add Donation Item
           </h1>
           <p className="text-muted-foreground">
-            Add a food item for donation to help those in need. All donation items are free for recipients.
+            Add a food item for donation to help those in need. All donation
+            items are free for recipients.
           </p>
         </div>
 
@@ -221,7 +215,9 @@ export default function AddDonation() {
               <div className="space-y-2">
                 <ImageUpload
                   currentImageUrl={formData.imageUrl}
-                  onImageChange={(imageUrl) => setFormData({...formData, imageUrl})}
+                  onImageChange={(imageUrl) =>
+                    setFormData({ ...formData, imageUrl })
+                  }
                   folder="donations"
                 />
               </div>
@@ -255,16 +251,22 @@ export default function AddDonation() {
                   <div className="p-4 bg-muted rounded-lg text-center">
                     <Heart className="h-8 w-8 text-red-500 mx-auto mb-2" />
                     <p className="text-sm font-medium">FREE DONATION</p>
-                    <p className="text-xs text-muted-foreground">This item will be free for recipients</p>
+                    <p className="text-xs text-muted-foreground">
+                      This item will be free for recipients
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h3 className="font-medium text-blue-900 mb-2">💡 Donation Tips</h3>
+                <h3 className="font-medium text-blue-900 mb-2">
+                  💡 Donation Tips
+                </h3>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• Make sure food items are fresh and safe to consume</li>
-                  <li>• Include expiry dates in the description if applicable</li>
+                  <li>
+                    • Include expiry dates in the description if applicable
+                  </li>
                   <li>• Consider packaging and pickup instructions</li>
                   <li>• Your generous donation helps those in need</li>
                 </ul>
@@ -283,8 +285,9 @@ export default function AddDonation() {
             <CardContent>
               <div className="p-4 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  📍 Pickup location will be automatically set to your business address from your profile. 
-                  Recipients will be able to collect donations from your registered business location.
+                  📍 Pickup location will be automatically set to your business
+                  address from your profile. Recipients will be able to collect
+                  donations from your registered business location.
                 </p>
               </div>
             </CardContent>

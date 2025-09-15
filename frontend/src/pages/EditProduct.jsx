@@ -263,7 +263,9 @@ export default function EditProduct() {
               <div className="space-y-2">
                 <ImageUpload
                   currentImageUrl={formData.imageUrl}
-                  onImageChange={(imageUrl) => setFormData({...formData, imageUrl})}
+                  onImageChange={(imageUrl) =>
+                    setFormData({ ...formData, imageUrl })
+                  }
                   folder="products"
                 />
               </div>

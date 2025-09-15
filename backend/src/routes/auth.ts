@@ -24,7 +24,7 @@ auth.post("/register", async (c) => {
     // Validate userType
     if (!["business", "pembeli", "charity"].includes(userType)) {
       return c.json(
-        { error: 'User type must be either "business", "buyer", or "charity' },
+        { error: 'User type must be either "business", "buyer", or "charitys' },
         400
       );
     }
@@ -66,7 +66,6 @@ auth.post("/register", async (c) => {
       },
     });
   } catch (error) {
-    console.error("Registration error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });
@@ -106,7 +105,6 @@ auth.post("/login", async (c) => {
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });
@@ -150,7 +148,6 @@ auth.get("/me", async (c) => {
       },
     });
   } catch (error) {
-    console.error("Get user error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });

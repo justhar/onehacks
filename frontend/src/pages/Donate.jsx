@@ -6,10 +6,7 @@ import { MarketplaceHeader } from "@/components/MarketplaceHeader";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  SlidersHorizontal,
-  Heart,
-} from "lucide-react";
+import { SlidersHorizontal, Heart } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 

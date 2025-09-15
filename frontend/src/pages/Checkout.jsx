@@ -52,7 +52,6 @@ export default function Checkout() {
         const response = await api.getProductById(id);
         setProduct(response);
       } catch (error) {
-        console.error("Failed to fetch product:", error);
         setError("Failed to load product details");
       } finally {
         setIsLoading(false);
@@ -126,7 +125,6 @@ export default function Checkout() {
         navigate(`/order/${response.order.id}`);
       }
     } catch (error) {
-      console.error("Order creation error:", error);
       setError("Failed to place order. Please try again.");
     } finally {
       setIsOrdering(false);
@@ -150,7 +148,6 @@ export default function Checkout() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Order Form */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Delivery Options */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -177,24 +174,28 @@ export default function Checkout() {
                       </div>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                    <RadioGroupItem value="delivery" id="delivery" />
-                    <Label htmlFor="delivery" className="flex-1 cursor-pointer">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">Delivery</div>
-                          <div className="text-sm text-muted-foreground">
-                            30-45 minutes • Rp10.000 fee
+                  {product.type !== "donation" && (
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                      <RadioGroupItem value="delivery" id="delivery" />
+                      <Label
+                        htmlFor="delivery"
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">Delivery</div>
+                            <div className="text-sm text-muted-foreground">
+                              30-45 minutes • Rp10.000 fee
+                            </div>
                           </div>
+                          <Truck className="h-4 w-4 text-muted-foreground" />
                         </div>
-                        <Truck className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </Label>
-                  </div>
+                      </Label>
+                    </div>
+                  )}
                 </RadioGroup>
               </CardContent>
             </Card>
-
             {/* Delivery Address */}
             {deliveryOption === "delivery" && (
               <Card>
@@ -227,7 +228,6 @@ export default function Checkout() {
                 </CardContent>
               </Card>
             )}
-
             {/* Contact Information */}
             <Card>
               <CardHeader>
